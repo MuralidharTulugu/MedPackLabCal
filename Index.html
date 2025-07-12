@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Costing Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .container {
+            max-width: 960px;
+        }
+
+        /* Common style for the new field wrappers (label + input/output in one box) */
+        .field-box {
+            @apply flex justify-between items-center px-4 py-3 border border-black rounded-lg shadow-md; /* Black border, padding, rounded corners, shadow */
+            min-height: 56px; /* Ensure consistent height for all boxes */
+        }
+        /* Specific background colors for input/output within the field-box */
+        .field-box.input-type {
+            background-color: #fffbeb; /* Light yellow background for input boxes */
+        }
+        .field-box.output-type {
+            background-color: #e0ffe0; /* Light green background for output boxes (emerald-50) */
+        }
+
+
+        /* Styling for Input Elements (text input, number input, select) - No direct border here, handled by .field-box */
+        input[type="number"], input[type="text"], select {
+            @apply flex-grow text-right bg-transparent border-none outline-none focus:ring-0; /* Remove default input styling, focus ring handled by parent */
+            color: #333; /* Darker text for readability */
+            padding: 0; /* Remove internal padding, handled by parent .field-box */
+        }
+        /* Make number input spinners always visible and styled */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none; /* Remove default styling */
+            opacity: 1; /* Ensure visibility */
+            width: 1.5rem; /* Make them wider */
+            height: 100%; /* Full height */
+            margin: 0; /* Remove default margin */
+            background-color: rgba(0, 0, 0, 0.05); /* Subtle background */
+            border-left: 1px solid rgba(0, 0, 0, 0.1); /* Separator line */
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        input[type="number"]::-webkit-inner-spin-button:hover,
+        input[type="number"]::-webkit-outer-spin-button:hover {
+            background-color: rgba(0, 0, 0, 0.1); /* Darker on hover */
+        }
+        input[type="number"] {
+            -moz-appearance: textfield; /* Firefox compatibility */
+        }
+
+        select {
+            /* For select dropdowns, adjust padding to make space for custom arrow if needed */
+            padding-right: 20px; /* Make space for a custom arrow if desired for consistency */
+        }
+
+
+        /* Styling for Labels within field boxes */
+        .field-box label {
+            @apply text-base font-medium text-gray-700 mr-2 flex-shrink-0; /* Label on left, pushes value right */
+            margin-bottom: 0 !important; /* Override default label margin */
+        }
+        /* Styling for Output Spans within field boxes */
+        .field-box span.output-value {
+            @apply text-right font-bold text-gray-900 flex-shrink-0; /* Align right, bold */
+            color: #065f46; /* Tailwind emerald-800 for strong output text */
+        }
+
+
+        /* Styling for Headings and Sub-headings - Left Aligned, More Decorative */
+        h1 {
+            @apply text-4xl sm:text-5xl font-extrabold text-left text-blue-800 mb-12 tracking-tight; /* Larger, bolder, more spacing */
+        }
+        .section-title {
+            @apply text-2xl sm:text-3xl font-bold text-left text-gray-800 mb-8 border-b-4 border-blue-200 pb-4; /* Larger, bolder, thicker underline */
+        }
+        
+        /* Specific styling for final output values */
+        #totalOverallCost .output-value {
+            @apply text-xl font-bold text-blue-800; /* Darker blue */
+        }
+        #basicCostPerLabel .output-value, #sellingPricePerLabel .output-value, #totalSellingValue .output-value {
+             @apply text-xl font-bold; 
+        }
+
+        .highlight-yellow {
+            background-color: #fef08a; /* Tailwind yellow-200 */
+        }
+        .highlight-green {
+            background-color: #dcfce7; /* Tailwind green-100 */
+        }
+        .suitable-row {
+            background-color: #dcfce7; /* Light green for suitable rows in table */
+        }
+        table {
+            @apply w-full border-collapse;
+        }
+        /* Added border-black to all table cells */
+        th, td {
+            @apply px-4 py-3 border border-black; /* Black border for all table cells */
+        }
+        th {
+            @apply bg-gray-200 font-semibold text-gray-700;
+        }
+        /* Align specific table columns to right */
+        #detailedCalculationTable th:nth-child(1),
+        #detailedCalculationTable td:nth-child(1),
+        #detailedCalculationTable th:nth-child(2),
+        #detailedCalculationTable td:nth-child(2),
+        #detailedCalculationTable th:nth-child(3),
+        #detailedCalculationTable td:nth-child(3),
+        #detailedCalculationTable th:nth-child(4),
+        #detailedCalculationTable td:nth-child(4),
+        #detailedCalculationTable th:nth-child(5),
+        #detailedCalculationTable td:nth-child(5),
+        #detailedCalculationTable th:nth-child(6),
+        #detailedCalculationTable td:nth-child(6),
+        #detailedCalculationTable th:nth-child(7),
+        #detailedCalculationTable td:nth-child(7),
+        #detailedCalculationTable th:nth-child(8),
+        #detailedCalculationTable td:nth-child(8),
+        #detailedCalculationTable th:nth-child(9),
+        #detailedCalculationTable td:nth-child(9),
+        #detailedCalculationTable th:nth-child(10) {
+            text-align: right;
+        }
+
+
+        /* Adjust grid gaps for more space */
+        .grid {
+            gap: 1.5rem; /* Default Tailwind gap-6 */
+        }
+        
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+    <div class="container mx-auto bg-white shadow-lg rounded-lg p-6">
+        <h1 class="text-3xl font-bold text-left text-blue-800 mb-12 tracking-tight">Label Costing Calculator</h1>
+
+        <!-- Main Input Screen -->
+        <section class="mb-8">
+            <h2 class="section-title">Job Parameters</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Order Details -->
+                <div class="field-box input-type">
+                    <label for="orderQuantity">Order Quantity (No.s)</label>
+                    <input type="number" id="orderQuantity" value="" min="1" step="1">
+                </div>
+
+                <!-- Label Dimensions - Now Adjacent -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="labelSizeAcross">Label Size Across (MM)</label>
+                        <input type="number" id="labelSizeAcross" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="labelSizeAround">Label Size Around (MM)</label>
+                        <input type="number" id="labelSizeAround" value="" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- Cylinder Parameters -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="field-box input-type">
+                        <label for="cylinderTeeth">Cylinder Teeth</label>
+                        <select id="cylinderTeeth">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Cylinder Size (Inches)</label>
+                        <span id="cylinderSizeInches" class="output-value">0.000</span>
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Cylinder Size (MM)</label>
+                        <span id="cylinderSizeMM" class="output-value">0.000</span>
+                    </div>
+                </div>
+
+                <!-- Detailed Calculation Breakdown Table -->
+                <section class="mb-8 col-span-full">
+                    <h2 class="section-title">Detailed Calculation Breakdown</h2>
+                    <div class="overflow-x-auto">
+                        <table id="detailedCalculationTable" class="min-w-full text-xs">
+                            <thead>
+                                <tr>
+                                    <th>Label size in Across</th>
+                                    <th>Label size in Around</th>
+                                    <th>Cylinder Repeat in Teeth</th>
+                                    <th>Nearest Teeth</th>
+                                    <th>Label Gap In Around (MM)</th>
+                                    <th>No of Labels In (N)</th>
+                                    <th>Cylinder repeat in Inches</th>
+                                    <th>Cylinder repeat in MM</th>
+                                    <th>No. of Labels in Across</th>
+                                    <th>Width of Substrate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailedCalculationTableBody">
+                                <!-- Table rows will be dynamically populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Gap Across, N, and Gap Around -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="field-box input-type">
+                        <label for="gapAcrossMM">Gap Across (MM)</label>
+                        <input type="number" id="gapAcrossMM" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="inputNForAround">No. of Labels In (N)</label>
+                        <input type="number" id="inputNForAround" value="" min="1" step="1">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="inputLabelGapAroundMM">Label Gap in Around (MM)</label>
+                        <input type="number" id="inputLabelGapAroundMM" value="" min="0" step="0.001">
+                    </div>
+                </div>
+
+                <!-- Substrate Width Section -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+                    <h2 class="section-title !text-xl !mb-4 !col-span-full">Substrate Width</h2>
+                    <div class="field-box input-type">
+                        <label>Label Ups in Across</label>
+                        <input type="number" id="labelNosAcross" value="" min="0" step="1">
+                    </div>
+                    <div class="field-box input-type">
+                        <label>Material Width (MM)</label>
+                        <input type="number" id="materialWidthMM" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="materialMarginMM">Material Margin Required (MM)</label>
+                        <input type="number" id="materialMarginMM" value="" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- Material & Wastage -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box output-type">
+                        <label>Total Material Required (Meters)</label>
+                        <span id="totalMaterialRequiredMeters" class="output-value">0.00</span>
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Total Square Meters Required</label>
+                        <span id="totalSquareMetersRequired" class="output-value">0.00</span>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="wastagePercentage">Wastage (%)</label>
+                        <input type="number" id="wastagePercentage" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Wastage in Meters</label>
+                        <span id="wastageInMeters" class="output-value">0.00</span>
+                    </div>
+                </div>
+
+                <!-- Raw Material Cost -->
+                 <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="rawMaterialPrice">Raw Material Price (INR/Sq Meter)</label>
+                        <input type="number" id="rawMaterialPrice" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Raw Material Cost (Total)</label>
+                        <span id="rawMaterialCostTotal" class="output-value">0.00</span>
+                    </div>
+                </div>
+
+                <!-- Production -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="field-box input-type">
+                        <label for="productionRate">Production Rate (Meters/Hour)</label>
+                        <input type="number" id="productionRate" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="setupTimeHours">Setup Time (Hours)</label>
+                        <input type="number" id="setupTimeHours" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="productionCostPerHour">Production Cost Per Hour (INR)</label>
+                        <input type="number" id="productionCostPerHour" value="" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box output-type">
+                        <label>Production Time (Hours)</label>
+                        <span id="productionTimeHoursOutput" class="output-value">0.00</span>
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Production Cost</label>
+                        <span id="productionCostOutput" class="output-value">0.00</span>
+                    </div>
+                </div>
+                <div class="field-box input-type">
+                    <label for="totalGSM">Total GSM of Material</label>
+                    <input type="number" id="totalGSM" value="" min="0" step="0.01">
+                </div>
+            </div>
+        </section>
+
+        <!-- Cost Component Inputs -->
+        <section class="mb-8">
+            <h2 class="section-title">Additional Cost Components</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Material Overrides -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="field-box input-type">
+                        <label for="varnishCost">Special Release Varnish Cost (INR/Sq Meter)</label>
+                        <input type="number" id="varnishCost" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Varnish Cost</label>
+                        <span id="varnishCostOutput" class="output-value">0.00</span>
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="foilCost">Cold Foil Cost (INR/Sq Meter)</label>
+                        <input type="number" id="foilCost" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Foil Cost</label>
+                        <span id="foilCostOutput" class="output-value">0.00</span>
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="coldLaminationCost">Cold Lamination Cost (INR/Sq Meter)</label>
+                        <input type="number" id="coldLaminationCost" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Cold Lamination Cost</label>
+                        <span id="coldLaminationCostOutput" class="output-value">0.00</span>
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="saLaminationCost">Self Adhesive Lamination Cost (INR/Sq Meter)</label>
+                        <input type="number" id="saLaminationCost" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Self Adhesive Lamination Cost</label>
+                        <span id="saLaminationCostOutput" class="output-value">0.00</span>
+                    </div>
+                </div>
+
+                <!-- Ink fields -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="field-box input-type">
+                        <label for="inkPricePercentage">Ink Price Cost (% of Raw Material Value)</label>
+                        <input type="number" id="inkPricePercentage" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Ink Cost (Calculated)</label>
+                        <span id="inkCostCalculated" class="output-value">0.00</span>
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Ink Cost (Rs/SQM)</label>
+                        <span id="inkCostRatio" class="output-value">0.00</span>
+                    </div>
+                </div>
+
+                <!-- Plates and Dies -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="numPlates">Number of Plates</label>
+                        <input type="number" id="numPlates" value="" min="0" step="1">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="totalPlateCost">Total Plate Cost (INR)</label>
+                        <input type="number" id="totalPlateCost" value="" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="dieQuantity">Die Quantity</label>
+                        <input type="number" id="dieQuantity" value="" min="0" step="1">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="totalDieCost">Total Die Cost (INR)</label>
+                        <input type="number" id="totalDieCost" value="" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- Transport -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="transportCostPercentage">Transport Cost (% of Raw Material Value)</label>
+                        <input type="number" id="transportCostPercentage" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="transportCostDirect">Transport Cost (Direct Value INR)</label>
+                        <input type="number" id="transportCostDirect" value="" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- Slitting & Numbering -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="slittingCostPerLabel">Slitting & Numbering Cost (INR/label)</label>
+                        <input type="number" id="slittingCostPerLabel" value="" min="0" step="0.001">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Slitting & Numbering Cost</label>
+                        <span id="slittingCostOutput" class="output-value">0.00</span>
+                    </div>
+                </div>
+
+                <!-- Digital Printing -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="digitalPrintingCost">Digital Printing Cost (INR/Sq Meter)</label>
+                        <input type="number" id="digitalPrintingCost" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Digital Printing Cost</label>
+                        <span id="digitalPrintingCostOutput" class="output-value">0.00</span>
+                    </div>
+                </div>
+
+                <!-- Packing -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="packingCostPercentage">Other (Packing) Cost (% of Raw Material Value)</label>
+                        <input type="number" id="packingCostPercentage" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Packing Cost</label>
+                        <span id="packingCostOutput" class="output-value">0.00</span>
+                    </div>
+                </div>
+                
+                <!-- Margin -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="marginPercentage">Margin (%)</label>
+                        <input type="number" id="marginPercentage" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Margin Amount (per label)</label>
+                        <span id="marginAmountPerLabel" class="output-value">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cost Summary -->
+        <section>
+            <h2 class="section-title">Cost Summary</h2>
+            <div class="grid grid-cols-1 gap-6" id="costSummaryFields">
+                
+                <!-- MODIFIED SECTION: Wrapped Total Cost and Basic Cost -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="field-box output-type">
+                        <label>Total Cost</label>
+                        <span id="totalCostFinal" class="output-value text-lg font-bold text-blue-700">0.00</span>
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Basic Cost per label</label>
+                        <span id="basicCostPerLabel" class="output-value text-lg font-bold text-green-700">0.00</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 highlight-yellow rounded-lg p-3">
+                    <div class="field-box output-type bg-transparent border-none shadow-none">
+                        <label>Selling Price (per label)</label>
+                        <span id="sellingPricePerLabel" class="output-value text-lg font-bold">0.00</span>
+                    </div>
+                    <div class="field-box output-type bg-transparent border-none shadow-none">
+                        <label>Total Selling value</label>
+                        <span id="totalSellingValue" class="output-value text-lg font-bold">0.00</span>
+                    </div>
+                </div>
+
+                <div class="field-box output-type">
+                    <label>Weight of the shipment in KGs</label>
+                    <span id="shipmentWeight" class="output-value">0.00</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- Data Definitions ---
+        const cylinderTeethOptions = [
+            73, 80, 84, 88, 90, 92, 95, 97, 98, 100, 104, 111, 116, 120, 128, 136, 160, 182
+        ];
+
+        // Derived cylinder data for quick lookup
+        const cylinderData = cylinderTeethOptions.map(teeth => ({
+            teeth: teeth,
+            mm: teeth * 3.175,
+            inches: teeth / 8
+        }));
+
+        // --- DOM Elements ---
+        let DOMElements; 
+
+        function initializeDOMElements() {
+            DOMElements = {
+                // Inputs
+                orderQuantity: document.getElementById('orderQuantity'),
+                labelSizeAcross: document.getElementById('labelSizeAcross'),
+                labelSizeAround: document.getElementById('labelSizeAround'),
+                gapAcrossMM: document.getElementById('gapAcrossMM'),
+                cylinderTeethSelect: document.getElementById('cylinderTeeth'),
+                wastagePercentage: document.getElementById('wastagePercentage'),
+                rawMaterialPrice: document.getElementById('rawMaterialPrice'),
+                productionRate: document.getElementById('productionRate'),
+                setupTimeHours: document.getElementById('setupTimeHours'),
+                productionCostPerHour: document.getElementById('productionCostPerHour'),
+                totalGSM: document.getElementById('totalGSM'),
+                varnishCost: document.getElementById('varnishCost'),
+                foilCost: document.getElementById('foilCost'),
+                coldLaminationCost: document.getElementById('coldLaminationCost'),
+                saLaminationCost: document.getElementById('saLaminationCost'),
+                inkPricePercentage: document.getElementById('inkPricePercentage'),
+                numPlates: document.getElementById('numPlates'),
+                totalPlateCost: document.getElementById('totalPlateCost'),
+                dieQuantity: document.getElementById('dieQuantity'),
+                totalDieCost: document.getElementById('totalDieCost'),
+                transportCostPercentage: document.getElementById('transportCostPercentage'),
+                transportCostDirect: document.getElementById('transportCostDirect'),
+                slittingCostPerLabel: document.getElementById('slittingCostPerLabel'),
+                digitalPrintingCost: document.getElementById('digitalPrintingCost'),
+                packingCostPercentage: document.getElementById('packingCostPercentage'),
+                marginPercentage: document.getElementById('marginPercentage'),
+                materialMarginMM: document.getElementById('materialMarginMM'),
+                labelNosAcross: document.getElementById('labelNosAcross'),
+                materialWidthMM: document.getElementById('materialWidthMM'),
+                inputNForAround: document.getElementById('inputNForAround'),
+                inputLabelGapAroundMM: document.getElementById('inputLabelGapAroundMM'),
+
+                // Outputs
+                cylinderSizeInches: document.getElementById('cylinderSizeInches'),
+                cylinderSizeMM: document.getElementById('cylinderSizeMM'),
+                totalMaterialRequiredMeters: document.getElementById('totalMaterialRequiredMeters'),
+                totalSquareMetersRequired: document.getElementById('totalSquareMetersRequired'),
+                rawMaterialCostTotal: document.getElementById('rawMaterialCostTotal'),
+                wastageInMeters: document.getElementById('wastageInMeters'),
+                productionTimeHoursOutput: document.getElementById('productionTimeHoursOutput'),
+                productionCostOutput: document.getElementById('productionCostOutput'),
+                varnishCostOutput: document.getElementById('varnishCostOutput'),
+                foilCostOutput: document.getElementById('foilCostOutput'),
+                coldLaminationCostOutput: document.getElementById('coldLaminationCostOutput'),
+                saLaminationCostOutput: document.getElementById('saLaminationCostOutput'),
+                inkCostCalculated: document.getElementById('inkCostCalculated'),
+                inkCostRatio: document.getElementById('inkCostRatio'),
+                slittingCostOutput: document.getElementById('slittingCostOutput'),
+                digitalPrintingCostOutput: document.getElementById('digitalPrintingCostOutput'),
+                packingCostOutput: document.getElementById('packingCostOutput'),
+                marginAmountPerLabel: document.getElementById('marginAmountPerLabel'),
+                sellingPricePerLabel: document.getElementById('sellingPricePerLabel'),
+                totalCostFinal: document.getElementById('totalCostFinal'),
+                shipmentWeight: document.getElementById('shipmentWeight'),
+                basicCostPerLabel: document.getElementById('basicCostPerLabel'),
+                totalSellingValue: document.getElementById('totalSellingValue'),
+
+                // Table Body
+                detailedCalculationTableBody: document.getElementById('detailedCalculationTableBody'),
+            };
+        }
+
+        // --- Helper Functions ---
+        function round(num, dp = 2) {
+            if (typeof num !== 'number' || !isFinite(num)) {
+                return 0; 
+            }
+            return parseFloat(num.toFixed(dp));
+        }
+
+        // --- Core Calculation Functions ---
+        function updateCylinderSizes() {
+            const selectedTeeth = parseFloat(DOMElements.cylinderTeethSelect.value);
+            const cylinder = cylinderData.find(c => c.teeth === selectedTeeth);
+
+            if (cylinder) {
+                if (DOMElements.cylinderSizeInches) DOMElements.cylinderSizeInches.textContent = round(cylinder.inches, 3);
+                if (DOMElements.cylinderSizeMM) DOMElements.cylinderSizeMM.textContent = round(cylinder.mm, 3);
+            } else {
+                if (DOMElements.cylinderSizeInches) DOMElements.cylinderSizeInches.textContent = '0.000';
+                if (DOMElements.cylinderSizeMM) DOMElements.cylinderSizeMM.textContent = '0.000';
+            }
+            calculateAllCosts(); 
+            updateDetailedCalculationTable();
+        }
+        
+        function calculateOptimalNAcross() {
+            const labelSizeAcross = parseFloat(DOMElements.labelSizeAcross.value) || 0;
+            const gapAcrossMM = parseFloat(DOMElements.gapAcrossMM.value) || 0;
+            const machineLimit = 320;
+            const materialMarginMM = parseFloat(DOMElements.materialMarginMM.value) || 0;
+            const inputLabelNosAcross = parseFloat(DOMElements.labelNosAcross?.value);
+            
+            let optimalNAcross;
+            let materialWidth;
+
+            if (isNaN(inputLabelNosAcross) || inputLabelNosAcross <= 0) {
+                let calculatedOptimalNAcrossLocal = 0;
+                if (labelSizeAcross > 0) {
+                    for (let nAcross = 1; nAcross <= 10; nAcross++) {
+                        const baseWidth = (labelSizeAcross * nAcross) + (gapAcrossMM * (nAcross -1));
+                        if (baseWidth <= machineLimit) {
+                            calculatedOptimalNAcrossLocal = nAcross;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                optimalNAcross = calculatedOptimalNAcrossLocal;
+                materialWidth = (optimalNAcross > 0) ? ((optimalNAcross * labelSizeAcross) + ((optimalNAcross - 1) * gapAcrossMM) + materialMarginMM) : materialMarginMM;
+                if (DOMElements.labelNosAcross) DOMElements.labelNosAcross.value = optimalNAcross;
+            } else {
+                optimalNAcross = inputLabelNosAcross;
+                materialWidth = (optimalNAcross * labelSizeAcross) + ((optimalNAcross - 1) * gapAcrossMM) + materialMarginMM;
+            }
+
+            if (DOMElements.materialWidthMM) DOMElements.materialWidthMM.value = round(materialWidth, 2);
+            return { optimalNAcross: optimalNAcross, materialWidth: materialWidth };
+        }
+
+        function calculateAllCosts() {
+            // Get all input values
+            const orderQuantity = parseFloat(DOMElements.orderQuantity?.value) || 0;
+            const labelSizeAround = parseFloat(DOMElements.labelSizeAround?.value) || 0;
+            const wastagePercentage = parseFloat(DOMElements.wastagePercentage?.value) || 0;
+            const rawMaterialPrice = parseFloat(DOMElements.rawMaterialPrice?.value) || 0;
+            const varnishCostPerSqM = parseFloat(DOMElements.varnishCost?.value) || 0;
+            const foilCostPerSqM = parseFloat(DOMElements.foilCost?.value) || 0;
+            const coldLaminationCostPerSqM = parseFloat(DOMElements.coldLaminationCost?.value) || 0;
+            const saLaminationCostPerSqM = parseFloat(DOMElements.saLaminationCost?.value) || 0;
+            const inkPricePercentage = parseFloat(DOMElements.inkPricePercentage?.value) || 0;
+            const totalPlateCostInput = parseFloat(DOMElements.totalPlateCost?.value) || 0;
+            const totalDieCostInput = parseFloat(DOMElements.totalDieCost?.value) || 0;
+            const transportCostPercentage = parseFloat(DOMElements.transportCostPercentage?.value) || 0;
+            const transportCostDirect = parseFloat(DOMElements.transportCostDirect?.value) || 0;
+            const slittingCostPerLabel = parseFloat(DOMElements.slittingCostPerLabel?.value) || 0;
+            const digitalPrintingCostPerSqM = parseFloat(DOMElements.digitalPrintingCost?.value) || 0;
+            const packingCostPercentage = parseFloat(DOMElements.packingCostPercentage?.value) || 0;
+            const marginPercentage = parseFloat(DOMElements.marginPercentage?.value) || 0;
+            const productionRate = parseFloat(DOMElements.productionRate?.value) || 0;
+            const setupTimeHours = parseFloat(DOMElements.setupTimeHours?.value) || 0;
+            const productionCostPerHour = parseFloat(DOMElements.productionCostPerHour?.value) || 0;
+            const totalGSM = parseFloat(DOMElements.totalGSM?.value) || 0;
+            const selectedNForAround = parseFloat(DOMElements.inputNForAround?.value) || 0;
+            const selectedLabelGapAroundMM = parseFloat(DOMElements.inputLabelGapAroundMM?.value) || 0;
+
+            if (orderQuantity === 0 || labelSizeAround === 0 || selectedNForAround === 0) {
+                // Reset fields if critical inputs are missing
+                return; 
+            }
+
+            const { optimalNAcross, materialWidth } = calculateOptimalNAcross();
+
+            if (optimalNAcross === null || optimalNAcross === 0) {
+                // Reset fields if no labels fit
+                return;
+            }
+
+            const calculatedTotalMaterialRequiredMeters = (orderQuantity / optimalNAcross) * ((labelSizeAround + selectedLabelGapAroundMM) / 1000);
+            const calculatedWastageInMeters = (wastagePercentage / 100) * calculatedTotalMaterialRequiredMeters;
+            const calculatedTotalSquareMetersRequired = (calculatedTotalMaterialRequiredMeters + calculatedWastageInMeters) * (materialWidth / 1000);
+            const calculatedRawMaterialCostTotal = rawMaterialPrice * calculatedTotalSquareMetersRequired;
+            const calculatedVarnishCost = varnishCostPerSqM * calculatedTotalSquareMetersRequired;
+            const calculatedFoilCost = foilCostPerSqM * calculatedTotalSquareMetersRequired;
+            const calculatedColdLaminationCost = coldLaminationCostPerSqM * calculatedTotalSquareMetersRequired;
+            const calculatedSaLaminationCost = saLaminationCostPerSqM * calculatedTotalSquareMetersRequired;
+            const calculatedInkCostCalculated = (inkPricePercentage / 100) * calculatedRawMaterialCostTotal;
+            const calculatedInkCostRatio = (calculatedTotalSquareMetersRequired > 0) ? (calculatedInkCostCalculated / calculatedTotalSquareMetersRequired) : 0;
+            const calculatedPlateCost = totalPlateCostInput;
+            const calculatedDieCost = totalDieCostInput;
+            
+            let calculatedTransportCost;
+            if (!isNaN(transportCostDirect) && transportCostDirect > 0) {
+                calculatedTransportCost = transportCostDirect;
+            } else {
+                calculatedTransportCost = (transportCostPercentage / 100) * calculatedRawMaterialCostTotal;
+            }
+            
+            const calculatedProductionTimeHours = (productionRate > 0) ? (((calculatedTotalMaterialRequiredMeters + calculatedWastageInMeters) / productionRate) + setupTimeHours) : setupTimeHours;
+            const calculatedProductionCost = calculatedProductionTimeHours * productionCostPerHour;
+            const calculatedSlittingCost = slittingCostPerLabel * orderQuantity;
+            const calculatedDigitalPrintingCost = digitalPrintingCostPerSqM * calculatedTotalSquareMetersRequired;
+            const calculatedPackingCost = (packingCostPercentage / 100) * calculatedRawMaterialCostTotal;
+            const calculatedShipmentWeight = (calculatedTotalSquareMetersRequired * totalGSM) / 1000;
+
+            // Update UI
+            DOMElements.totalMaterialRequiredMeters.textContent = round(calculatedTotalMaterialRequiredMeters);
+            DOMElements.totalSquareMetersRequired.textContent = round(calculatedTotalSquareMetersRequired);
+            DOMElements.rawMaterialCostTotal.textContent = round(calculatedRawMaterialCostTotal);
+            DOMElements.wastageInMeters.textContent = round(calculatedWastageInMeters);
+            DOMElements.productionTimeHoursOutput.textContent = round(calculatedProductionTimeHours);
+            DOMElements.productionCostOutput.textContent = round(calculatedProductionCost);
+            DOMElements.varnishCostOutput.textContent = round(calculatedVarnishCost);
+            DOMElements.foilCostOutput.textContent = round(calculatedFoilCost);
+            DOMElements.coldLaminationCostOutput.textContent = round(calculatedColdLaminationCost);
+            DOMElements.saLaminationCostOutput.textContent = round(calculatedSaLaminationCost);
+            DOMElements.inkCostCalculated.textContent = round(calculatedInkCostCalculated);
+            DOMElements.inkCostRatio.textContent = round(calculatedInkCostRatio);
+            DOMElements.slittingCostOutput.textContent = round(calculatedSlittingCost);
+            DOMElements.digitalPrintingCostOutput.textContent = round(calculatedDigitalPrintingCost);
+            DOMElements.packingCostOutput.textContent = round(calculatedPackingCost);
+            DOMElements.shipmentWeight.textContent = round(calculatedShipmentWeight, 2);
+
+            // Final Costs
+            const totalOverallCost = calculatedRawMaterialCostTotal + calculatedVarnishCost + calculatedFoilCost + calculatedColdLaminationCost +
+                calculatedSaLaminationCost + calculatedInkCostCalculated + calculatedPlateCost + calculatedDieCost +
+                calculatedTransportCost + calculatedProductionCost + calculatedSlittingCost +
+                calculatedDigitalPrintingCost + calculatedPackingCost;
+            
+            const basicCostPerLabel = (orderQuantity > 0) ? (totalOverallCost / orderQuantity) : 0;
+            const marginAmountPerLabel = (basicCostPerLabel * marginPercentage) / 100;
+            const sellingPricePerLabel = basicCostPerLabel + marginAmountPerLabel;
+            const totalSellingValue = sellingPricePerLabel * orderQuantity;
+
+            DOMElements.totalCostFinal.textContent = round(totalOverallCost);
+            DOMElements.basicCostPerLabel.textContent = round(basicCostPerLabel, 3);
+            DOMElements.marginAmountPerLabel.textContent = round(marginAmountPerLabel, 3);
+            DOMElements.sellingPricePerLabel.textContent = round(sellingPricePerLabel, 3);
+            DOMElements.totalSellingValue.textContent = round(totalSellingValue);
+        }
+
+        function updateDetailedCalculationTable() {
+            const labelSizeAcross = parseFloat(DOMElements.labelSizeAcross?.value) || 0;
+            const labelSizeAround = parseFloat(DOMElements.labelSizeAround?.value) || 0;
+            const selectedCylinderTeeth = parseFloat(DOMElements.cylinderTeethSelect?.value);
+            const cylinder = cylinderData.find(c => c.teeth === selectedCylinderTeeth);
+            const materialMarginMM = parseFloat(DOMElements.materialMarginMM?.value) || 0;
+            const machineLimit = 320;
+
+            if (isNaN(labelSizeAround) || labelSizeAround <= 0 || !cylinder) {
+                if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500">Enter Label Sizes and select Cylinder Teeth to see breakdown.</td></tr>';
+                return;
+            }
+
+            const cylinderRepeatInMM = cylinder.mm;
+            const cylinderRepeatInInches = cylinder.inches;
+            let tableHTML = '';
+
+            for (let n = 1; n <= 20; n++) {
+                const nearestTeethValue = round(((labelSizeAround + 3) * n) / 3.175, 0);
+                const labelGapAround = (cylinderRepeatInMM - (labelSizeAround * n)) / n;
+                
+                let noOfLabelsInAcrossForThisRow = 0;
+                if (labelSizeAcross > 0) {
+                     noOfLabelsInAcrossForThisRow = Math.floor(machineLimit / (labelSizeAcross + 4));
+                }
+
+                const baseWidthCalculation = (labelSizeAcross + 4) * noOfLabelsInAcrossForThisRow;
+                let widthOfSubstrate = (baseWidthCalculation > machineLimit) ? materialMarginMM : baseWidthCalculation + materialMarginMM;
+                
+                const isSuitable = labelGapAround >= 2.5 && labelGapAround <= 5;
+                const rowClass = isSuitable ? 'suitable-row' : '';
+
+                tableHTML += `
+                    <tr class="${rowClass}">
+                        <td>${round(labelSizeAcross, 2)}</td>
+                        <td>${round(labelSizeAround, 2)}</td>
+                        <td>${cylinder.teeth}</td>
+                        <td>${nearestTeethValue}</td>
+                        <td>${round(labelGapAround, 3)}</td>
+                        <td>${n}</td>
+                        <td>${round(cylinderRepeatInInches, 3)}</td>
+                        <td>${round(cylinderRepeatInMM, 3)}</td>
+                        <td>${noOfLabelsInAcrossForThisRow}</td>
+                        <td>${round(widthOfSubstrate, 2)}</td>
+                    </tr>
+                `;
+            }
+            if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = tableHTML;
+        }
+
+        // --- Event Listeners ---
+        function attachEventListeners() {
+            initializeDOMElements();
+
+            // Populate Cylinder Teeth dropdown
+            if (DOMElements.cylinderTeethSelect) {
+                cylinderData.forEach(cylinder => {
+                    const option = document.createElement('option');
+                    option.value = cylinder.teeth;
+                    option.textContent = cylinder.teeth;
+                    DOMElements.cylinderTeethSelect.appendChild(option);
+                });
+                if (!DOMElements.cylinderTeethSelect.value) {
+                    DOMElements.cylinderTeethSelect.value = '88';
+                }
+            }
+
+            // Attach change/input listeners to all relevant fields
+            const allInputs = document.querySelectorAll('input[type="number"], select');
+            allInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    if (['cylinderTeeth', 'labelSizeAround', 'gapAcrossMM', 'labelSizeAcross', 'materialMarginMM'].includes(input.id)) {
+                        updateCylinderSizes();
+                    } else {
+                        calculateAllCosts();
+                    }
+                });
+            });
+
+            // Initial calculations on page load
+            updateCylinderSizes();
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', attachEventListeners);
+
+    </script>
+</body>
+</html>
