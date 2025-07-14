@@ -146,7 +146,21 @@
 <body class="p-4 sm:p-6 md:p-8">
     <!-- This is the main container that will be captured as an image -->
     <div id="capture" class="container mx-auto bg-white shadow-lg rounded-lg p-6">
-        <h1 class="text-3xl font-bold text-left text-blue-800 mb-12 tracking-tight">Label Costing Calculator</h1>
+        <h1 class="text-3xl font-bold text-left text-blue-800 mb-6">Label Costing Calculator</h1>
+
+        <!-- NEW: Cost Sheet Management Section -->
+        <section class="mb-12 p-4 border-2 border-dashed border-gray-400 rounded-lg">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">Cost Sheet Management</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div class="field-box input-type col-span-1 sm:col-span-2 lg:col-span-1">
+                    <label for="referenceNumber" class="!text-sm">Reference No.</label>
+                    <input type="text" id="referenceNumber" class="text-right">
+                </div>
+                <button id="loadSheetBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition-colors">Load</button>
+                <button id="saveSheetBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors">Save</button>
+                <button id="clearFormBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition-colors">Clear Form</button>
+            </div>
+        </section>
 
         <!-- Main Input Screen -->
         <section class="mb-8">
@@ -574,7 +588,13 @@
                 // Table Body
                 detailedCalculationTableBody: document.getElementById('detailedCalculationTableBody'),
                 
-                // New Button
+                // Save/Load Elements
+                referenceNumber: document.getElementById('referenceNumber'),
+                loadSheetBtn: document.getElementById('loadSheetBtn'),
+                saveSheetBtn: document.getElementById('saveSheetBtn'),
+                clearFormBtn: document.getElementById('clearFormBtn'),
+
+                // Image Capture Elements
                 saveAsImageBtn: document.getElementById('saveAsImageBtn'),
                 captureArea: document.getElementById('capture')
             };
@@ -789,6 +809,61 @@
             if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = tableHTML;
         }
 
+        // --- Save/Load Functions ---
+        function saveCostSheet() {
+            const refNo = DOMElements.referenceNumber.value;
+            if (!refNo) {
+                alert('Please enter a Reference Number to save the cost sheet.');
+                return;
+            }
+
+            const dataToSave = {};
+            const inputs = document.querySelectorAll('input[type="number"], input[type="text"], select');
+            inputs.forEach(input => {
+                if (input.id) { // Only save elements with an ID
+                    dataToSave[input.id] = input.value;
+                }
+            });
+
+            localStorage.setItem('costSheet-' + refNo, JSON.stringify(dataToSave));
+            alert(`Cost sheet with reference number "${refNo}" has been saved.`);
+        }
+
+        function loadCostSheet() {
+            const refNo = DOMElements.referenceNumber.value;
+            if (!refNo) {
+                alert('Please enter a Reference Number to load a cost sheet.');
+                return;
+            }
+
+            const savedData = localStorage.getItem('costSheet-' + refNo);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                for (const id in data) {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.value = data[id];
+                    }
+                }
+                // After loading data, recalculate everything
+                updateCylinderSizes();
+                alert(`Cost sheet "${refNo}" has been loaded.`);
+            } else {
+                alert(`No cost sheet found with the reference number "${refNo}".`);
+            }
+        }
+
+        function clearForm() {
+            const inputs = document.querySelectorAll('input[type="number"], input[type="text"]');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            // Also reset the dropdown to the first option
+            DOMElements.cylinderTeethSelect.selectedIndex = 0;
+            // Recalculate everything to show zeros
+            updateCylinderSizes();
+        }
+
         // --- Event Listeners ---
         function attachEventListeners() {
             initializeDOMElements();
@@ -818,7 +893,7 @@
                 });
             });
             
-            // NEW EVENT LISTENER FOR THE SAVE BUTTON
+            // Event listener for the Save Image button
             if (DOMElements.saveAsImageBtn) {
                 DOMElements.saveAsImageBtn.addEventListener('click', () => {
                     html2canvas(DOMElements.captureArea).then(canvas => {
@@ -828,6 +903,17 @@
                         link.click();
                     });
                 });
+            }
+
+            // Event listeners for Save/Load/Clear buttons
+            if (DOMElements.saveSheetBtn) {
+                DOMElements.saveSheetBtn.addEventListener('click', saveCostSheet);
+            }
+            if (DOMElements.loadSheetBtn) {
+                DOMElements.loadSheetBtn.addEventListener('click', loadCostSheet);
+            }
+            if(DOMElements.clearFormBtn) {
+                DOMElements.clearFormBtn.addEventListener('click', clearForm);
             }
 
             // Initial calculations on page load
