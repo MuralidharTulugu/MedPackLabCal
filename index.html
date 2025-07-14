@@ -20,24 +20,37 @@
 
         /* Common style for the new field wrappers (label + input/output in one box) */
         .field-box {
-            @apply flex justify-between items-center px-4 py-3 border border-black rounded-lg shadow-md; /* Black border, padding, rounded corners, shadow */
-            min-height: 56px; /* Ensure consistent height for all boxes */
+            @apply flex justify-between items-start px-4 py-4 border border-black rounded-lg shadow-md; /* Changed to items-start and adjusted padding */
         }
         /* Specific background colors for input/output within the field-box */
         .field-box.input-type {
             background-color: #fffbeb; /* Light yellow background for input boxes */
         }
         .field-box.output-type {
-            background-color: #e0ffe0; /* Light green background for output boxes (emerald-50) */
+            @apply items-center; /* Keep output boxes vertically centered */
         }
 
 
         /* Styling for Input Elements (text input, number input, select) - No direct border here, handled by .field-box */
-        input[type="number"], input[type="text"], select {
-            @apply flex-grow text-right bg-transparent border-none outline-none focus:ring-0; /* Remove default input styling, focus ring handled by parent */
+        input[type="number"], input[type="text"], select, textarea {
+            @apply flex-grow bg-transparent border-none outline-none focus:ring-0; /* Remove default input styling, focus ring handled by parent */
             color: #333; /* Darker text for readability */
             padding: 0; /* Remove internal padding, handled by parent .field-box */
         }
+        
+        input[type="number"], select {
+            @apply text-right;
+        }
+        
+        input[type="text"], textarea {
+            @apply text-left whitespace-normal h-auto pt-1; /* Allow text wrapping and adjust height */
+        }
+
+        textarea {
+            @apply resize-none; /* Prevent manual resizing of the textarea */
+            min-height: 24px; /* Set a minimum height */
+        }
+
         /* Make number input spinners always visible and styled */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
@@ -67,7 +80,7 @@
 
         /* Styling for Labels within field boxes */
         .field-box label {
-            @apply text-base font-medium text-gray-700 mr-2 flex-shrink-0; /* Label on left, pushes value right */
+            @apply text-base font-medium text-gray-700 mr-4 flex-shrink-0 pt-1; /* Label on left, pushes value right, added padding-top */
             margin-bottom: 0 !important; /* Override default label margin */
         }
         /* Styling for Output Spans within field boxes */
@@ -113,25 +126,8 @@
             @apply bg-gray-200 font-semibold text-gray-700;
         }
         /* Align specific table columns to right */
-        #detailedCalculationTable th:nth-child(1),
-        #detailedCalculationTable td:nth-child(1),
-        #detailedCalculationTable th:nth-child(2),
-        #detailedCalculationTable td:nth-child(2),
-        #detailedCalculationTable th:nth-child(3),
-        #detailedCalculationTable td:nth-child(3),
-        #detailedCalculationTable th:nth-child(4),
-        #detailedCalculationTable td:nth-child(4),
-        #detailedCalculationTable th:nth-child(5),
-        #detailedCalculationTable td:nth-child(5),
-        #detailedCalculationTable th:nth-child(6),
-        #detailedCalculationTable td:nth-child(6),
-        #detailedCalculationTable th:nth-child(7),
-        #detailedCalculationTable td:nth-child(7),
-        #detailedCalculationTable th:nth-child(8),
-        #detailedCalculationTable td:nth-child(8),
-        #detailedCalculationTable th:nth-child(9),
-        #detailedCalculationTable td:nth-child(9),
-        #detailedCalculationTable th:nth-child(10) {
+        #detailedCalculationTable th,
+        #detailedCalculationTable td {
             text-align: right;
         }
 
@@ -184,16 +180,14 @@
                     </div>
                 </div>
 
-                <!-- NEW: Corner Radius and Material Type -->
-                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="field-box input-type">
-                        <label for="cornerRadius">Corner Radius (MM)</label>
-                        <input type="number" id="cornerRadius" value="" min="0" step="0.1">
-                    </div>
-                    <div class="field-box input-type">
-                        <label for="materialType">Material Type</label>
-                        <input type="text" id="materialType" class="text-right">
-                    </div>
+                <!-- Corner Radius and Material Type (Restructured for better wrapping) -->
+                <div class="field-box input-type">
+                    <label for="cornerRadius">Corner Radius (MM)</label>
+                    <input type="number" id="cornerRadius" value="" min="0" step="0.1">
+                </div>
+                <div class="field-box input-type lg:col-span-2">
+                    <label for="materialType">Material Type</label>
+                    <textarea id="materialType" rows="1" class="text-left">80 GSM semi gloss paper with adhesive with 57 gsm Glassine Paper liner</textarea>
                 </div>
 
                 <!-- Cylinder Parameters -->
@@ -311,15 +305,15 @@
                 <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="field-box input-type">
                         <label for="productionRate">Production Rate (Meters/Hour)</label>
-                        <input type="number" id="productionRate" value="" min="0" step="0.01">
+                        <input type="number" id="productionRate" value="1500" min="0" step="0.01">
                     </div>
                     <div class="field-box input-type">
                         <label for="setupTimeHours">Setup Time (Hours)</label>
-                        <input type="number" id="setupTimeHours" value="" min="0" step="0.01">
+                        <input type="number" id="setupTimeHours" value="1" min="0" step="0.01">
                     </div>
                     <div class="field-box input-type">
                         <label for="productionCostPerHour">Production Cost Per Hour (INR)</label>
-                        <input type="number" id="productionCostPerHour" value="" min="0" step="0.01">
+                        <input type="number" id="productionCostPerHour" value="3500" min="0" step="0.01">
                     </div>
                 </div>
                 <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -383,7 +377,7 @@
                 <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="field-box input-type">
                         <label for="inkPricePercentage">Ink Price Cost (% of Raw Material Value)</label>
-                        <input type="number" id="inkPricePercentage" value="" min="0" step="0.01">
+                        <input type="number" id="inkPricePercentage" value="15" min="0" step="0.01">
                     </div>
                     <div class="field-box output-type">
                         <label>Ink Cost (Calculated)</label>
@@ -411,9 +405,9 @@
                         <label for="dieQuantity">Die Quantity</label>
                         <input type="number" id="dieQuantity" value="" min="0" step="1">
                     </div>
-                    <div class="field-box input-type">
-                        <label for="totalDieCost">Total Die Cost (INR)</label>
-                        <input type="number" id="totalDieCost" value="" min="0" step="0.01">
+                    <div class="field-box output-type">
+                        <label>Total Die Cost (INR)</label>
+                        <span id="totalDieCost" class="output-value">0.00</span>
                     </div>
                 </div>
 
@@ -851,8 +845,9 @@
             const labelSizeAround = parseFloat(DOMElements.labelSizeAround?.value) || 0;
             const selectedCylinderTeeth = parseFloat(DOMElements.cylinderTeethSelect?.value);
             const cylinder = cylinderData.find(c => c.teeth === selectedCylinderTeeth);
-            const materialMarginMM = parseFloat(DOMElements.materialMarginMM?.value) || 0;
             const machineLimit = 320;
+            const fixedGap = 3;
+            const fixedMargin = 12;
 
             if (isNaN(labelSizeAround) || labelSizeAround <= 0 || !cylinder) {
                 if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500">Enter Label Sizes and select Cylinder Teeth to see breakdown.</td></tr>';
@@ -867,29 +862,32 @@
                 const nearestTeethValue = round(((labelSizeAround + 3) * n) / 3.175, 0);
                 const labelGapAround = (cylinderRepeatInMM - (labelSizeAround * n)) / n;
                 
-                let noOfLabelsInAcrossForThisRow = 0;
-                if (labelSizeAcross > 0) {
-                     noOfLabelsInAcrossForThisRow = Math.floor(machineLimit / (labelSizeAcross + 4));
-                }
+                const noOfLabelsInAcrossForThisRow = n; 
+                
+                const baseWidth = (labelSizeAcross + fixedGap) * noOfLabelsInAcrossForThisRow;
+                let widthOfSubstrate;
 
-                const baseWidthCalculation = (labelSizeAcross + 4) * noOfLabelsInAcrossForThisRow;
-                let widthOfSubstrate = (baseWidthCalculation > machineLimit) ? materialMarginMM : baseWidthCalculation + materialMarginMM;
+                if (baseWidth > machineLimit) {
+                    widthOfSubstrate = 0 + fixedMargin;
+                } else {
+                    widthOfSubstrate = baseWidth + fixedMargin;
+                }
                 
                 const isSuitable = labelGapAround >= 2.5 && labelGapAround <= 5;
                 const rowClass = isSuitable ? 'suitable-row' : '';
 
                 tableHTML += `
                     <tr class="${rowClass}">
-                        <td>${round(labelSizeAcross, 2)}</td>
-                        <td>${round(labelSizeAround, 2)}</td>
-                        <td>${cylinder.teeth}</td>
-                        <td>${nearestTeethValue}</td>
-                        <td>${round(labelGapAround, 3)}</td>
-                        <td>${n}</td>
-                        <td>${round(cylinderRepeatInInches, 3)}</td>
-                        <td>${round(cylinderRepeatInMM, 3)}</td>
-                        <td>${noOfLabelsInAcrossForThisRow}</td>
-                        <td>${round(widthOfSubstrate, 2)}</td>
+                        <td class="text-right">${round(labelSizeAcross, 2)}</td>
+                        <td class="text-right">${round(labelSizeAround, 2)}</td>
+                        <td class="text-right">${cylinder.teeth}</td>
+                        <td class="text-right">${nearestTeethValue}</td>
+                        <td class="text-right">${round(labelGapAround, 3)}</td>
+                        <td class="text-right">${n}</td>
+                        <td class="text-right">${round(cylinderRepeatInInches, 3)}</td>
+                        <td class="text-right">${round(cylinderRepeatInMM, 3)}</td>
+                        <td class="text-right">${noOfLabelsInAcrossForThisRow}</td>
+                        <td class="text-right">${round(widthOfSubstrate, 2)}</td>
                     </tr>
                 `;
             }
@@ -918,7 +916,7 @@
             }
 
             const dataToSave = {};
-            const inputs = document.querySelectorAll('input[type="number"], input[type="text"], select');
+            const inputs = document.querySelectorAll('input[type="number"], input[type="text"], select, textarea');
             inputs.forEach(input => {
                 if (input.id) { // Only save elements with an ID
                     dataToSave[input.id] = input.value;
@@ -954,7 +952,7 @@
         }
 
         function clearForm() {
-            const inputs = document.querySelectorAll('input[type="number"], input[type="text"]');
+            const inputs = document.querySelectorAll('input[type="number"], input[type="text"], textarea');
             inputs.forEach(input => {
                 input.value = '';
             });
@@ -982,9 +980,16 @@
             }
 
             // Attach change/input listeners to all relevant fields
-            const allInputs = document.querySelectorAll('input[type="number"], input[type="text"], select');
+            const allInputs = document.querySelectorAll('input[type="number"], input[type="text"], select, textarea');
             allInputs.forEach(input => {
                 input.addEventListener('input', updateAllCalculations);
+            });
+            
+            // Auto-resize textarea
+            const textarea = DOMElements.materialType;
+            textarea.addEventListener('input', () => {
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight) + 'px';
             });
             
             // Event listener for the Save Full Sheet button
@@ -1020,9 +1025,6 @@
             }
             if(DOMElements.clearFormBtn) {
                 DOMElements.clearFormBtn.addEventListener('click', clearForm);
-            }
-            if (DOMElements.closeCustomAlert) {
-                DOMElements.closeCustomAlert.addEventListener('click', hideCustomAlert);
             }
 
             // Initial calculations on page load
