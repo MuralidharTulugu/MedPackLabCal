@@ -6,6 +6,8 @@
     <title>Label Costing Calculator</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas Library for saving as image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -142,7 +144,8 @@
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
-    <div class="container mx-auto bg-white shadow-lg rounded-lg p-6">
+    <!-- This is the main container that will be captured as an image -->
+    <div id="capture" class="container mx-auto bg-white shadow-lg rounded-lg p-6">
         <h1 class="text-3xl font-bold text-left text-blue-800 mb-12 tracking-tight">Label Costing Calculator</h1>
 
         <!-- Main Input Screen -->
@@ -388,15 +391,19 @@
                     </div>
                 </div>
 
-                <!-- Transport -->
-                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- MODIFIED: Transport and Weight fields are now in a 3-column grid -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="field-box input-type">
-                        <label for="transportCostPercentage">Transport Cost (% of Raw Material Value)</label>
+                        <label for="transportCostPercentage">Transport Cost (%)</label>
                         <input type="number" id="transportCostPercentage" value="" min="0" step="0.01">
                     </div>
                     <div class="field-box input-type">
-                        <label for="transportCostDirect">Transport Cost (Direct Value INR)</label>
+                        <label for="transportCostDirect">Transport Cost (Direct)</label>
                         <input type="number" id="transportCostDirect" value="" min="0" step="0.01">
+                    </div>
+                    <div class="field-box output-type">
+                        <label>Weight (KGs)</label>
+                        <span id="shipmentWeight" class="output-value">0.00</span>
                     </div>
                 </div>
 
@@ -455,7 +462,6 @@
             <h2 class="section-title">Cost Summary</h2>
             <div class="grid grid-cols-1 gap-6" id="costSummaryFields">
                 
-                <!-- MODIFIED SECTION: Wrapped Total Cost and Basic Cost -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="field-box output-type">
                         <label>Total Cost</label>
@@ -478,12 +484,15 @@
                     </div>
                 </div>
 
-                <div class="field-box output-type">
-                    <label>Weight of the shipment in KGs</label>
-                    <span id="shipmentWeight" class="output-value">0.00</span>
-                </div>
             </div>
         </section>
+    </div>
+
+    <!-- "SAVE AS IMAGE" BUTTON -->
+    <div class="container mx-auto mt-8 text-center">
+        <button id="saveAsImageBtn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">
+            Save as Image
+        </button>
     </div>
 
     <script>
@@ -564,6 +573,10 @@
 
                 // Table Body
                 detailedCalculationTableBody: document.getElementById('detailedCalculationTableBody'),
+                
+                // New Button
+                saveAsImageBtn: document.getElementById('saveAsImageBtn'),
+                captureArea: document.getElementById('capture')
             };
         }
 
@@ -804,6 +817,18 @@
                     }
                 });
             });
+            
+            // NEW EVENT LISTENER FOR THE SAVE BUTTON
+            if (DOMElements.saveAsImageBtn) {
+                DOMElements.saveAsImageBtn.addEventListener('click', () => {
+                    html2canvas(DOMElements.captureArea).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'cost-sheet.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    });
+                });
+            }
 
             // Initial calculations on page load
             updateCylinderSizes();
