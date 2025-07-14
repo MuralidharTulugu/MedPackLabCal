@@ -148,7 +148,7 @@
     <div id="capture" class="container mx-auto bg-white shadow-lg rounded-lg p-6">
         <h1 class="text-3xl font-bold text-left text-blue-800 mb-6">Label Costing Calculator</h1>
 
-        <!-- NEW: Cost Sheet Management Section -->
+        <!-- Cost Sheet Management Section -->
         <section class="mb-12 p-4 border-2 border-dashed border-gray-400 rounded-lg">
             <h2 class="text-xl font-bold text-gray-700 mb-4">Cost Sheet Management</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
@@ -172,7 +172,7 @@
                     <input type="number" id="orderQuantity" value="" min="1" step="1">
                 </div>
 
-                <!-- Label Dimensions - Now Adjacent -->
+                <!-- Label Dimensions -->
                 <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="field-box input-type">
                         <label for="labelSizeAcross">Label Size Across (MM)</label>
@@ -181,6 +181,18 @@
                     <div class="field-box input-type">
                         <label for="labelSizeAround">Label Size Around (MM)</label>
                         <input type="number" id="labelSizeAround" value="" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- NEW: Corner Radius and Material Type -->
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field-box input-type">
+                        <label for="cornerRadius">Corner Radius (MM)</label>
+                        <input type="number" id="cornerRadius" value="" min="0" step="0.1">
+                    </div>
+                    <div class="field-box input-type">
+                        <label for="materialType">Material Type</label>
+                        <input type="text" id="materialType" class="text-right">
                     </div>
                 </div>
 
@@ -235,7 +247,7 @@
                         <input type="number" id="gapAcrossMM" value="" min="0" step="0.01">
                     </div>
                     <div class="field-box input-type">
-                        <label for="inputNForAround">No. of Labels In (N)</label>
+                        <label for="inputNForAround">No. of Labels In Around (N)</label>
                         <input type="number" id="inputNForAround" value="" min="1" step="1">
                     </div>
                     <div class="field-box input-type">
@@ -497,15 +509,67 @@
                         <span id="totalSellingValue" class="output-value text-lg font-bold">0.00</span>
                     </div>
                 </div>
-
             </div>
         </section>
+
+        <!-- Summary for Manufacturer -->
+        <section id="manufacturerSummary" class="mt-12">
+            <h2 class="section-title">Summary for Manufacturer</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <tbody>
+                        <tr class="bg-gray-50">
+                            <td class="font-semibold border border-gray-300 p-3">Label size in Across (MM)</td>
+                            <td class="border border-gray-300 p-3 text-right"><span id="mfgLabelSizeAcross">0.00</span></td>
+                            <td class="font-semibold border border-gray-300 p-3">Label size in Around (MM)</td>
+                            <td class="border border-gray-300 p-3 text-right"><span id="mfgLabelSizeAround">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold border border-gray-300 p-3">Cylinder Teeth</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgCylinderTeeth">0</span></td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <td class="font-semibold border border-gray-300 p-3">Label Ups in Across</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgLabelNosAcross">0</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold border border-gray-300 p-3">No. of Labels In Around (N)</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgInputNForAround">0</span></td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <td class="font-semibold border border-gray-300 p-3">Material Width (MM)</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgMaterialWidthMM">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold border border-gray-300 p-3">Gap Across (MM)</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgGapAcrossMM">0.00</span></td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <td class="font-semibold border border-gray-300 p-3">Label Gap in Around (MM)</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgInputLabelGapAroundMM">0.000</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold border border-gray-300 p-3">Corner Radius</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgCornerRadius">0.0</span></td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <td class="font-semibold border border-gray-300 p-3">Material Type</td>
+                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgMaterialType">N/A</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
     </div>
 
-    <!-- "SAVE AS IMAGE" BUTTON -->
-    <div class="container mx-auto mt-8 text-center">
-        <button id="saveAsImageBtn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">
-            Save as Image
+    <!-- REVISED BUTTON LAYOUT -->
+    <div class="container mx-auto mt-8 text-center grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button id="saveFullSheetBtn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">
+            Save Full Cost Sheet
+        </button>
+        <button id="saveMfgSummaryBtn" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-teal-700 transition-colors duration-300">
+            Save Manufacturer Summary
         </button>
     </div>
 
@@ -559,6 +623,8 @@
                 materialWidthMM: document.getElementById('materialWidthMM'),
                 inputNForAround: document.getElementById('inputNForAround'),
                 inputLabelGapAroundMM: document.getElementById('inputLabelGapAroundMM'),
+                cornerRadius: document.getElementById('cornerRadius'),
+                materialType: document.getElementById('materialType'),
 
                 // Outputs
                 cylinderSizeInches: document.getElementById('cylinderSizeInches'),
@@ -595,8 +661,23 @@
                 clearFormBtn: document.getElementById('clearFormBtn'),
 
                 // Image Capture Elements
-                saveAsImageBtn: document.getElementById('saveAsImageBtn'),
-                captureArea: document.getElementById('capture')
+                saveFullSheetBtn: document.getElementById('saveFullSheetBtn'),
+                saveMfgSummaryBtn: document.getElementById('saveMfgSummaryBtn'),
+                captureArea: document.getElementById('capture'),
+                manufacturerSummaryArea: document.getElementById('manufacturerSummary'),
+
+
+                // Manufacturer Table Outputs
+                mfgLabelSizeAcross: document.getElementById('mfgLabelSizeAcross'),
+                mfgLabelSizeAround: document.getElementById('mfgLabelSizeAround'),
+                mfgCylinderTeeth: document.getElementById('mfgCylinderTeeth'),
+                mfgLabelNosAcross: document.getElementById('mfgLabelNosAcross'),
+                mfgInputNForAround: document.getElementById('mfgInputNForAround'),
+                mfgMaterialWidthMM: document.getElementById('mfgMaterialWidthMM'),
+                mfgGapAcrossMM: document.getElementById('mfgGapAcrossMM'),
+                mfgInputLabelGapAroundMM: document.getElementById('mfgInputLabelGapAroundMM'),
+                mfgCornerRadius: document.getElementById('mfgCornerRadius'),
+                mfgMaterialType: document.getElementById('mfgMaterialType'),
             };
         }
 
@@ -609,6 +690,11 @@
         }
 
         // --- Core Calculation Functions ---
+        function updateAllCalculations() {
+            updateCylinderSizes();
+            updateManufacturerTable();
+        }
+
         function updateCylinderSizes() {
             const selectedTeeth = parseFloat(DOMElements.cylinderTeethSelect.value);
             const cylinder = cylinderData.find(c => c.teeth === selectedTeeth);
@@ -622,6 +708,7 @@
             }
             calculateAllCosts(); 
             updateDetailedCalculationTable();
+            updateManufacturerTable();
         }
         
         function calculateOptimalNAcross() {
@@ -684,15 +771,15 @@
             const selectedNForAround = parseFloat(DOMElements.inputNForAround?.value) || 0;
             const selectedLabelGapAroundMM = parseFloat(DOMElements.inputLabelGapAroundMM?.value) || 0;
 
+            updateManufacturerTable();
+
             if (orderQuantity === 0 || labelSizeAround === 0 || selectedNForAround === 0) {
-                // Reset fields if critical inputs are missing
                 return; 
             }
 
             const { optimalNAcross, materialWidth } = calculateOptimalNAcross();
 
             if (optimalNAcross === null || optimalNAcross === 0) {
-                // Reset fields if no labels fit
                 return;
             }
 
@@ -809,6 +896,19 @@
             if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = tableHTML;
         }
 
+        function updateManufacturerTable() {
+            DOMElements.mfgLabelSizeAcross.textContent = DOMElements.labelSizeAcross.value || '0.00';
+            DOMElements.mfgLabelSizeAround.textContent = DOMElements.labelSizeAround.value || '0.00';
+            DOMElements.mfgCylinderTeeth.textContent = DOMElements.cylinderTeethSelect.value || '0';
+            DOMElements.mfgLabelNosAcross.textContent = DOMElements.labelNosAcross.value || '0';
+            DOMElements.mfgInputNForAround.textContent = DOMElements.inputNForAround.value || '0';
+            DOMElements.mfgMaterialWidthMM.textContent = DOMElements.materialWidthMM.value || '0.00';
+            DOMElements.mfgGapAcrossMM.textContent = DOMElements.gapAcrossMM.value || '0.00';
+            DOMElements.mfgInputLabelGapAroundMM.textContent = DOMElements.inputLabelGapAroundMM.value || '0.000';
+            DOMElements.mfgCornerRadius.textContent = DOMElements.cornerRadius.value || '0.0';
+            DOMElements.mfgMaterialType.textContent = DOMElements.materialType.value || 'N/A';
+        }
+
         // --- Save/Load Functions ---
         function saveCostSheet() {
             const refNo = DOMElements.referenceNumber.value;
@@ -846,7 +946,7 @@
                     }
                 }
                 // After loading data, recalculate everything
-                updateCylinderSizes();
+                updateAllCalculations();
                 alert(`Cost sheet "${refNo}" has been loaded.`);
             } else {
                 alert(`No cost sheet found with the reference number "${refNo}".`);
@@ -861,7 +961,7 @@
             // Also reset the dropdown to the first option
             DOMElements.cylinderTeethSelect.selectedIndex = 0;
             // Recalculate everything to show zeros
-            updateCylinderSizes();
+            updateAllCalculations();
         }
 
         // --- Event Listeners ---
@@ -882,23 +982,29 @@
             }
 
             // Attach change/input listeners to all relevant fields
-            const allInputs = document.querySelectorAll('input[type="number"], select');
+            const allInputs = document.querySelectorAll('input[type="number"], input[type="text"], select');
             allInputs.forEach(input => {
-                input.addEventListener('input', () => {
-                    if (['cylinderTeeth', 'labelSizeAround', 'gapAcrossMM', 'labelSizeAcross', 'materialMarginMM'].includes(input.id)) {
-                        updateCylinderSizes();
-                    } else {
-                        calculateAllCosts();
-                    }
-                });
+                input.addEventListener('input', updateAllCalculations);
             });
             
-            // Event listener for the Save Image button
-            if (DOMElements.saveAsImageBtn) {
-                DOMElements.saveAsImageBtn.addEventListener('click', () => {
+            // Event listener for the Save Full Sheet button
+            if (DOMElements.saveFullSheetBtn) {
+                DOMElements.saveFullSheetBtn.addEventListener('click', () => {
                     html2canvas(DOMElements.captureArea).then(canvas => {
                         const link = document.createElement('a');
-                        link.download = 'cost-sheet.png';
+                        link.download = 'full-cost-sheet.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    });
+                });
+            }
+            
+            // Event listener for the Save Manufacturer Summary button
+            if (DOMElements.saveMfgSummaryBtn) {
+                DOMElements.saveMfgSummaryBtn.addEventListener('click', () => {
+                    html2canvas(DOMElements.manufacturerSummaryArea).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'manufacturer-summary.png';
                         link.href = canvas.toDataURL('image/png');
                         link.click();
                     });
@@ -915,9 +1021,12 @@
             if(DOMElements.clearFormBtn) {
                 DOMElements.clearFormBtn.addEventListener('click', clearForm);
             }
+            if (DOMElements.closeCustomAlert) {
+                DOMElements.closeCustomAlert.addEventListener('click', hideCustomAlert);
+            }
 
             // Initial calculations on page load
-            updateCylinderSizes();
+            updateAllCalculations();
         }
 
         // Initialize the app
