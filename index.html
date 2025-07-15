@@ -106,15 +106,17 @@
              @apply text-xl font-bold; 
         }
 
-        .highlight-yellow {
-            background-color: #fef08a; /* Tailwind yellow-200 */
-        }
+        /* Highlight colors for the breakdown table */
         .highlight-green {
             background-color: #dcfce7; /* Tailwind green-100 */
         }
-        .suitable-row {
-            background-color: #dcfce7; /* Light green for suitable rows in table */
+        .highlight-yellow {
+            background-color: #fef08a; /* Tailwind yellow-200 */
         }
+        .highlight-orange {
+            background-color: #fed7aa; /* Tailwind orange-200 */
+        }
+        
         table {
             @apply w-full border-collapse;
         }
@@ -873,8 +875,14 @@
                     widthOfSubstrate = baseWidth + fixedMargin;
                 }
                 
-                const isSuitable = labelGapAround >= 2.5 && labelGapAround <= 5;
-                const rowClass = isSuitable ? 'suitable-row' : '';
+                let rowClass = '';
+                if (labelGapAround >= 2.5 && labelGapAround <= 5) {
+                    rowClass = 'highlight-green';
+                } else if (labelGapAround >= 6 && labelGapAround <= 10) {
+                    rowClass = 'highlight-yellow';
+                } else if (labelGapAround >= 11 && labelGapAround <= 15) {
+                    rowClass = 'highlight-orange';
+                }
 
                 tableHTML += `
                     <tr class="${rowClass}">
