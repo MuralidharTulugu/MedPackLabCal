@@ -414,11 +414,7 @@
                 </div>
 
                 <!-- MODIFIED: Transport and Weight fields are now in a 3-column grid -->
-                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="field-box input-type">
-                        <label for="transportCostPercentage">Transport Cost (%)</label>
-                        <input type="number" id="transportCostPercentage" value="" min="0" step="0.01">
-                    </div>
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="field-box input-type">
                         <label for="transportCostDirect">Transport Cost (Direct)</label>
                         <input type="number" id="transportCostDirect" value="" min="0" step="0.01">
@@ -608,7 +604,6 @@
                 totalPlateCost: document.getElementById('totalPlateCost'),
                 dieQuantity: document.getElementById('dieQuantity'),
                 totalDieCost: document.getElementById('totalDieCost'),
-                transportCostPercentage: document.getElementById('transportCostPercentage'),
                 transportCostDirect: document.getElementById('transportCostDirect'),
                 slittingCostPerLabel: document.getElementById('slittingCostPerLabel'),
                 digitalPrintingCost: document.getElementById('digitalPrintingCost'),
@@ -754,7 +749,6 @@
             const inkPricePercentage = parseFloat(DOMElements.inkPricePercentage?.value) || 0;
             const totalPlateCostInput = parseFloat(DOMElements.totalPlateCost?.value) || 0;
             const totalDieCostInput = parseFloat(DOMElements.totalDieCost?.value) || 0;
-            const transportCostPercentage = parseFloat(DOMElements.transportCostPercentage?.value) || 0;
             const transportCostDirect = parseFloat(DOMElements.transportCostDirect?.value) || 0;
             const slittingCostPerLabel = parseFloat(DOMElements.slittingCostPerLabel?.value) || 0;
             const digitalPrintingCostPerSqM = parseFloat(DOMElements.digitalPrintingCost?.value) || 0;
@@ -792,12 +786,7 @@
             const calculatedPlateCost = totalPlateCostInput;
             const calculatedDieCost = totalDieCostInput;
             
-            let calculatedTransportCost;
-            if (!isNaN(transportCostDirect) && transportCostDirect > 0) {
-                calculatedTransportCost = transportCostDirect;
-            } else {
-                calculatedTransportCost = (transportCostPercentage / 100) * calculatedRawMaterialCostTotal;
-            }
+            const calculatedTransportCost = transportCostDirect;
             
             const calculatedProductionTimeHours = (productionRate > 0) ? (((calculatedTotalMaterialRequiredMeters + calculatedWastageInMeters) / productionRate) + setupTimeHours) : setupTimeHours;
             const calculatedProductionCost = calculatedProductionTimeHours * productionCostPerHour;
