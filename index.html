@@ -20,37 +20,24 @@
 
         /* Common style for the new field wrappers (label + input/output in one box) */
         .field-box {
-            @apply flex justify-between items-start px-4 py-4 border border-black rounded-lg shadow-md; /* Changed to items-start and adjusted padding */
+            @apply flex justify-between items-center px-4 py-3 border border-black rounded-lg shadow-md; /* Black border, padding, rounded corners, shadow */
+            min-height: 56px; /* Ensure consistent height for all boxes */
         }
         /* Specific background colors for input/output within the field-box */
         .field-box.input-type {
             background-color: #fffbeb; /* Light yellow background for input boxes */
         }
         .field-box.output-type {
-            @apply items-center; /* Keep output boxes vertically centered */
+            background-color: #e0ffe0; /* Light green background for output boxes (emerald-50) */
         }
 
 
         /* Styling for Input Elements (text input, number input, select) - No direct border here, handled by .field-box */
-        input[type="number"], input[type="text"], select, textarea {
-            @apply flex-grow bg-transparent border-none outline-none focus:ring-0; /* Remove default input styling, focus ring handled by parent */
+        input[type="number"], input[type="text"], select {
+            @apply flex-grow text-right bg-transparent border-none outline-none focus:ring-0; /* Remove default input styling, focus ring handled by parent */
             color: #333; /* Darker text for readability */
             padding: 0; /* Remove internal padding, handled by parent .field-box */
         }
-        
-        input[type="number"], select {
-            @apply text-right;
-        }
-        
-        input[type="text"], textarea {
-            @apply text-left whitespace-normal h-auto pt-1; /* Allow text wrapping and adjust height */
-        }
-
-        textarea {
-            @apply resize-none; /* Prevent manual resizing of the textarea */
-            min-height: 24px; /* Set a minimum height */
-        }
-
         /* Make number input spinners always visible and styled */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
@@ -80,7 +67,7 @@
 
         /* Styling for Labels within field boxes */
         .field-box label {
-            @apply text-base font-medium text-gray-700 mr-4 flex-shrink-0 pt-1; /* Label on left, pushes value right, added padding-top */
+            @apply text-base font-medium text-gray-700 mr-2 flex-shrink-0; /* Label on left, pushes value right */
             margin-bottom: 0 !important; /* Override default label margin */
         }
         /* Styling for Output Spans within field boxes */
@@ -106,17 +93,15 @@
              @apply text-xl font-bold; 
         }
 
-        /* Highlight colors for the breakdown table */
-        .highlight-green {
-            background-color: #dcfce7 !important; /* Tailwind green-100 */
-        }
         .highlight-yellow {
-            background-color: #fef08a !important; /* Tailwind yellow-200 */
+            background-color: #fef08a; /* Tailwind yellow-200 */
         }
-        .highlight-orange {
-            background-color: #fed7aa !important; /* Tailwind orange-200 */
+        .highlight-green {
+            background-color: #dcfce7; /* Tailwind green-100 */
         }
-        
+        .suitable-row {
+            background-color: #dcfce7; /* Light green for suitable rows in table */
+        }
         table {
             @apply w-full border-collapse;
         }
@@ -128,8 +113,25 @@
             @apply bg-gray-200 font-semibold text-gray-700;
         }
         /* Align specific table columns to right */
-        #detailedCalculationTable th,
-        #detailedCalculationTable td {
+        #detailedCalculationTable th:nth-child(1),
+        #detailedCalculationTable td:nth-child(1),
+        #detailedCalculationTable th:nth-child(2),
+        #detailedCalculationTable td:nth-child(2),
+        #detailedCalculationTable th:nth-child(3),
+        #detailedCalculationTable td:nth-child(3),
+        #detailedCalculationTable th:nth-child(4),
+        #detailedCalculationTable td:nth-child(4),
+        #detailedCalculationTable th:nth-child(5),
+        #detailedCalculationTable td:nth-child(5),
+        #detailedCalculationTable th:nth-child(6),
+        #detailedCalculationTable td:nth-child(6),
+        #detailedCalculationTable th:nth-child(7),
+        #detailedCalculationTable td:nth-child(7),
+        #detailedCalculationTable th:nth-child(8),
+        #detailedCalculationTable td:nth-child(8),
+        #detailedCalculationTable th:nth-child(9),
+        #detailedCalculationTable td:nth-child(9),
+        #detailedCalculationTable th:nth-child(10) {
             text-align: right;
         }
 
@@ -144,7 +146,7 @@
 <body class="p-4 sm:p-6 md:p-8">
     <!-- This is the main container that will be captured as an image -->
     <div id="capture" class="container mx-auto bg-white shadow-lg rounded-lg p-6">
-        <h1 class="text-3xl font-bold text-left text-blue-800 mb-6">Label Costing Calculator</h1>
+        <h1 class="text-3xl font-bold text-left text-blue-800 mb-12 tracking-tight">Label Costing Calculator</h1>
 
         <!-- Main Input Screen -->
         <section class="mb-8">
@@ -156,7 +158,7 @@
                     <input type="number" id="orderQuantity" value="" min="1" step="1">
                 </div>
 
-                <!-- Label Dimensions -->
+                <!-- Label Dimensions - Now Adjacent -->
                 <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="field-box input-type">
                         <label for="labelSizeAcross">Label Size Across (MM)</label>
@@ -166,16 +168,6 @@
                         <label for="labelSizeAround">Label Size Around (MM)</label>
                         <input type="number" id="labelSizeAround" value="" min="0" step="0.01">
                     </div>
-                </div>
-
-                <!-- Corner Radius and Material Type (Restructured for better wrapping) -->
-                <div class="field-box input-type">
-                    <label for="cornerRadius">Corner Radius (MM)</label>
-                    <input type="number" id="cornerRadius" value="" min="0" step="0.1">
-                </div>
-                <div class="field-box input-type lg:col-span-2">
-                    <label for="materialType">Material Type</label>
-                    <textarea id="materialType" rows="1" class="text-left">80 GSM semi gloss paper with adhesive with 57 gsm Glassine Paper liner</textarea>
                 </div>
 
                 <!-- Cylinder Parameters -->
@@ -229,7 +221,7 @@
                         <input type="number" id="gapAcrossMM" value="" min="0" step="0.01">
                     </div>
                     <div class="field-box input-type">
-                        <label for="inputNForAround">No. of Labels In Around (N)</label>
+                        <label for="inputNForAround">No. of Labels In (N)</label>
                         <input type="number" id="inputNForAround" value="" min="1" step="1">
                     </div>
                     <div class="field-box input-type">
@@ -239,7 +231,7 @@
                 </div>
 
                 <!-- Substrate Width Section -->
-                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
                     <h2 class="section-title !text-xl !mb-4 !col-span-full">Substrate Width</h2>
                     <div class="field-box input-type">
                         <label>Label Ups in Across</label>
@@ -293,15 +285,15 @@
                 <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="field-box input-type">
                         <label for="productionRate">Production Rate (Meters/Hour)</label>
-                        <input type="number" id="productionRate" value="1500" min="0" step="0.01">
+                        <input type="number" id="productionRate" value="" min="0" step="0.01">
                     </div>
                     <div class="field-box input-type">
                         <label for="setupTimeHours">Setup Time (Hours)</label>
-                        <input type="number" id="setupTimeHours" value="1" min="0" step="0.01">
+                        <input type="number" id="setupTimeHours" value="" min="0" step="0.01">
                     </div>
                     <div class="field-box input-type">
                         <label for="productionCostPerHour">Production Cost Per Hour (INR)</label>
-                        <input type="number" id="productionCostPerHour" value="3500" min="0" step="0.01">
+                        <input type="number" id="productionCostPerHour" value="" min="0" step="0.01">
                     </div>
                 </div>
                 <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -365,7 +357,7 @@
                 <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="field-box input-type">
                         <label for="inkPricePercentage">Ink Price Cost (% of Raw Material Value)</label>
-                        <input type="number" id="inkPricePercentage" value="15" min="0" step="0.01">
+                        <input type="number" id="inkPricePercentage" value="" min="0" step="0.01">
                     </div>
                     <div class="field-box output-type">
                         <label>Ink Cost (Calculated)</label>
@@ -400,7 +392,11 @@
                 </div>
 
                 <!-- MODIFIED: Transport and Weight fields are now in a 3-column grid -->
-                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="field-box input-type">
+                        <label for="transportCostPercentage">Transport Cost (%)</label>
+                        <input type="number" id="transportCostPercentage" value="" min="0" step="0.01">
+                    </div>
                     <div class="field-box input-type">
                         <label for="transportCostDirect">Transport Cost (Direct)</label>
                         <input type="number" id="transportCostDirect" value="" min="0" step="0.01">
@@ -487,67 +483,15 @@
                         <span id="totalSellingValue" class="output-value text-lg font-bold">0.00</span>
                     </div>
                 </div>
+
             </div>
         </section>
-
-        <!-- Summary for Manufacturer -->
-        <section id="manufacturerSummary" class="mt-12">
-            <h2 class="section-title">Summary for Manufacturer</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <tbody>
-                        <tr class="bg-gray-50">
-                            <td class="font-semibold border border-gray-300 p-3">Label size in Across (MM)</td>
-                            <td class="border border-gray-300 p-3 text-right"><span id="mfgLabelSizeAcross">0.00</span></td>
-                            <td class="font-semibold border border-gray-300 p-3">Label size in Around (MM)</td>
-                            <td class="border border-gray-300 p-3 text-right"><span id="mfgLabelSizeAround">0.00</span></td>
-                        </tr>
-                        <tr>
-                            <td class="font-semibold border border-gray-300 p-3">Cylinder Teeth</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgCylinderTeeth">0</span></td>
-                        </tr>
-                        <tr class="bg-gray-50">
-                            <td class="font-semibold border border-gray-300 p-3">Label Ups in Across</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgLabelNosAcross">0</span></td>
-                        </tr>
-                        <tr>
-                            <td class="font-semibold border border-gray-300 p-3">No. of Labels In Around (N)</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgInputNForAround">0</span></td>
-                        </tr>
-                        <tr class="bg-gray-50">
-                            <td class="font-semibold border border-gray-300 p-3">Material Width (MM)</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgMaterialWidthMM">0.00</span></td>
-                        </tr>
-                        <tr>
-                            <td class="font-semibold border border-gray-300 p-3">Gap Across (MM)</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgGapAcrossMM">0.00</span></td>
-                        </tr>
-                        <tr class="bg-gray-50">
-                            <td class="font-semibold border border-gray-300 p-3">Label Gap in Around (MM)</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgInputLabelGapAroundMM">0.000</span></td>
-                        </tr>
-                        <tr>
-                            <td class="font-semibold border border-gray-300 p-3">Corner Radius</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgCornerRadius">0.0</span></td>
-                        </tr>
-                        <tr class="bg-gray-50">
-                            <td class="font-semibold border border-gray-300 p-3">Material Type</td>
-                            <td class="border border-gray-300 p-3 text-right" colspan="3"><span id="mfgMaterialType">N/A</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
     </div>
 
-    <!-- REVISED BUTTON LAYOUT -->
-    <div class="container mx-auto mt-8 text-center grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <button id="saveFullSheetBtn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">
-            Save Full Cost Sheet
-        </button>
-        <button id="saveMfgSummaryBtn" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-teal-700 transition-colors duration-300">
-            Save Manufacturer Summary
+    <!-- "SAVE AS IMAGE" BUTTON -->
+    <div class="container mx-auto mt-8 text-center">
+        <button id="saveAsImageBtn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">
+            Save as Image
         </button>
     </div>
 
@@ -590,6 +534,7 @@
                 totalPlateCost: document.getElementById('totalPlateCost'),
                 dieQuantity: document.getElementById('dieQuantity'),
                 totalDieCost: document.getElementById('totalDieCost'),
+                transportCostPercentage: document.getElementById('transportCostPercentage'),
                 transportCostDirect: document.getElementById('transportCostDirect'),
                 slittingCostPerLabel: document.getElementById('slittingCostPerLabel'),
                 digitalPrintingCost: document.getElementById('digitalPrintingCost'),
@@ -600,8 +545,6 @@
                 materialWidthMM: document.getElementById('materialWidthMM'),
                 inputNForAround: document.getElementById('inputNForAround'),
                 inputLabelGapAroundMM: document.getElementById('inputLabelGapAroundMM'),
-                cornerRadius: document.getElementById('cornerRadius'),
-                materialType: document.getElementById('materialType'),
 
                 // Outputs
                 cylinderSizeInches: document.getElementById('cylinderSizeInches'),
@@ -631,24 +574,9 @@
                 // Table Body
                 detailedCalculationTableBody: document.getElementById('detailedCalculationTableBody'),
                 
-                // Image Capture Elements
-                saveFullSheetBtn: document.getElementById('saveFullSheetBtn'),
-                saveMfgSummaryBtn: document.getElementById('saveMfgSummaryBtn'),
-                captureArea: document.getElementById('capture'),
-                manufacturerSummaryArea: document.getElementById('manufacturerSummary'),
-
-
-                // Manufacturer Table Outputs
-                mfgLabelSizeAcross: document.getElementById('mfgLabelSizeAcross'),
-                mfgLabelSizeAround: document.getElementById('mfgLabelSizeAround'),
-                mfgCylinderTeeth: document.getElementById('mfgCylinderTeeth'),
-                mfgLabelNosAcross: document.getElementById('mfgLabelNosAcross'),
-                mfgInputNForAround: document.getElementById('mfgInputNForAround'),
-                mfgMaterialWidthMM: document.getElementById('mfgMaterialWidthMM'),
-                mfgGapAcrossMM: document.getElementById('mfgGapAcrossMM'),
-                mfgInputLabelGapAroundMM: document.getElementById('mfgInputLabelGapAroundMM'),
-                mfgCornerRadius: document.getElementById('mfgCornerRadius'),
-                mfgMaterialType: document.getElementById('mfgMaterialType'),
+                // New Button
+                saveAsImageBtn: document.getElementById('saveAsImageBtn'),
+                captureArea: document.getElementById('capture')
             };
         }
 
@@ -661,11 +589,6 @@
         }
 
         // --- Core Calculation Functions ---
-        function updateAllCalculations() {
-            updateCylinderSizes();
-            updateManufacturerTable();
-        }
-
         function updateCylinderSizes() {
             const selectedTeeth = parseFloat(DOMElements.cylinderTeethSelect.value);
             const cylinder = cylinderData.find(c => c.teeth === selectedTeeth);
@@ -679,7 +602,6 @@
             }
             calculateAllCosts(); 
             updateDetailedCalculationTable();
-            updateManufacturerTable();
         }
         
         function calculateOptimalNAcross() {
@@ -729,6 +651,7 @@
             const inkPricePercentage = parseFloat(DOMElements.inkPricePercentage?.value) || 0;
             const totalPlateCostInput = parseFloat(DOMElements.totalPlateCost?.value) || 0;
             const totalDieCostInput = parseFloat(DOMElements.totalDieCost?.value) || 0;
+            const transportCostPercentage = parseFloat(DOMElements.transportCostPercentage?.value) || 0;
             const transportCostDirect = parseFloat(DOMElements.transportCostDirect?.value) || 0;
             const slittingCostPerLabel = parseFloat(DOMElements.slittingCostPerLabel?.value) || 0;
             const digitalPrintingCostPerSqM = parseFloat(DOMElements.digitalPrintingCost?.value) || 0;
@@ -741,15 +664,15 @@
             const selectedNForAround = parseFloat(DOMElements.inputNForAround?.value) || 0;
             const selectedLabelGapAroundMM = parseFloat(DOMElements.inputLabelGapAroundMM?.value) || 0;
 
-            updateManufacturerTable();
-
             if (orderQuantity === 0 || labelSizeAround === 0 || selectedNForAround === 0) {
+                // Reset fields if critical inputs are missing
                 return; 
             }
 
             const { optimalNAcross, materialWidth } = calculateOptimalNAcross();
 
             if (optimalNAcross === null || optimalNAcross === 0) {
+                // Reset fields if no labels fit
                 return;
             }
 
@@ -766,7 +689,12 @@
             const calculatedPlateCost = totalPlateCostInput;
             const calculatedDieCost = totalDieCostInput;
             
-            const calculatedTransportCost = transportCostDirect;
+            let calculatedTransportCost;
+            if (!isNaN(transportCostDirect) && transportCostDirect > 0) {
+                calculatedTransportCost = transportCostDirect;
+            } else {
+                calculatedTransportCost = (transportCostPercentage / 100) * calculatedRawMaterialCostTotal;
+            }
             
             const calculatedProductionTimeHours = (productionRate > 0) ? (((calculatedTotalMaterialRequiredMeters + calculatedWastageInMeters) / productionRate) + setupTimeHours) : setupTimeHours;
             const calculatedProductionCost = calculatedProductionTimeHours * productionCostPerHour;
@@ -816,9 +744,8 @@
             const labelSizeAround = parseFloat(DOMElements.labelSizeAround?.value) || 0;
             const selectedCylinderTeeth = parseFloat(DOMElements.cylinderTeethSelect?.value);
             const cylinder = cylinderData.find(c => c.teeth === selectedCylinderTeeth);
+            const materialMarginMM = parseFloat(DOMElements.materialMarginMM?.value) || 0;
             const machineLimit = 320;
-            const fixedGap = 3;
-            const fixedMargin = 12;
 
             if (isNaN(labelSizeAround) || labelSizeAround <= 0 || !cylinder) {
                 if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500">Enter Label Sizes and select Cylinder Teeth to see breakdown.</td></tr>';
@@ -833,55 +760,33 @@
                 const nearestTeethValue = round(((labelSizeAround + 3) * n) / 3.175, 0);
                 const labelGapAround = (cylinderRepeatInMM - (labelSizeAround * n)) / n;
                 
-                const noOfLabelsInAcrossForThisRow = n; 
-                
-                const baseWidth = (labelSizeAcross + fixedGap) * noOfLabelsInAcrossForThisRow;
-                let widthOfSubstrate;
+                let noOfLabelsInAcrossForThisRow = 0;
+                if (labelSizeAcross > 0) {
+                     noOfLabelsInAcrossForThisRow = Math.floor(machineLimit / (labelSizeAcross + 4));
+                }
 
-                if (baseWidth > machineLimit) {
-                    widthOfSubstrate = 0 + fixedMargin;
-                } else {
-                    widthOfSubstrate = baseWidth + fixedMargin;
-                }
+                const baseWidthCalculation = (labelSizeAcross + 4) * noOfLabelsInAcrossForThisRow;
+                let widthOfSubstrate = (baseWidthCalculation > machineLimit) ? materialMarginMM : baseWidthCalculation + materialMarginMM;
                 
-                let rowClass = '';
-                if (labelGapAround >= 2.5 && labelGapAround <= 5) {
-                    rowClass = 'highlight-green';
-                } else if (labelGapAround >= 6 && labelGapAround <= 10) {
-                    rowClass = 'highlight-yellow';
-                } else if (labelGapAround >= 11 && labelGapAround <= 15) {
-                    rowClass = 'highlight-orange';
-                }
+                const isSuitable = labelGapAround >= 2.5 && labelGapAround <= 5;
+                const rowClass = isSuitable ? 'suitable-row' : '';
 
                 tableHTML += `
                     <tr class="${rowClass}">
-                        <td class="text-right">${round(labelSizeAcross, 2)}</td>
-                        <td class="text-right">${round(labelSizeAround, 2)}</td>
-                        <td class="text-right">${cylinder.teeth}</td>
-                        <td class="text-right">${nearestTeethValue}</td>
-                        <td class="text-right">${round(labelGapAround, 3)}</td>
-                        <td class="text-right">${n}</td>
-                        <td class="text-right">${round(cylinderRepeatInInches, 3)}</td>
-                        <td class="text-right">${round(cylinderRepeatInMM, 3)}</td>
-                        <td class="text-right">${noOfLabelsInAcrossForThisRow}</td>
-                        <td class="text-right">${round(widthOfSubstrate, 2)}</td>
+                        <td>${round(labelSizeAcross, 2)}</td>
+                        <td>${round(labelSizeAround, 2)}</td>
+                        <td>${cylinder.teeth}</td>
+                        <td>${nearestTeethValue}</td>
+                        <td>${round(labelGapAround, 3)}</td>
+                        <td>${n}</td>
+                        <td>${round(cylinderRepeatInInches, 3)}</td>
+                        <td>${round(cylinderRepeatInMM, 3)}</td>
+                        <td>${noOfLabelsInAcrossForThisRow}</td>
+                        <td>${round(widthOfSubstrate, 2)}</td>
                     </tr>
                 `;
             }
             if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = tableHTML;
-        }
-
-        function updateManufacturerTable() {
-            DOMElements.mfgLabelSizeAcross.textContent = DOMElements.labelSizeAcross.value || '0.00';
-            DOMElements.mfgLabelSizeAround.textContent = DOMElements.labelSizeAround.value || '0.00';
-            DOMElements.mfgCylinderTeeth.textContent = DOMElements.cylinderTeethSelect.value || '0';
-            DOMElements.mfgLabelNosAcross.textContent = DOMElements.labelNosAcross.value || '0';
-            DOMElements.mfgInputNForAround.textContent = DOMElements.inputNForAround.value || '0';
-            DOMElements.mfgMaterialWidthMM.textContent = DOMElements.materialWidthMM.value || '0.00';
-            DOMElements.mfgGapAcrossMM.textContent = DOMElements.gapAcrossMM.value || '0.00';
-            DOMElements.mfgInputLabelGapAroundMM.textContent = DOMElements.inputLabelGapAroundMM.value || '0.000';
-            DOMElements.mfgCornerRadius.textContent = DOMElements.cornerRadius.value || '0.0';
-            DOMElements.mfgMaterialType.textContent = DOMElements.materialType.value || 'N/A';
         }
 
         // --- Event Listeners ---
@@ -902,36 +807,23 @@
             }
 
             // Attach change/input listeners to all relevant fields
-            const allInputs = document.querySelectorAll('input[type="number"], input[type="text"], select, textarea');
+            const allInputs = document.querySelectorAll('input[type="number"], select');
             allInputs.forEach(input => {
-                input.addEventListener('input', updateAllCalculations);
+                input.addEventListener('input', () => {
+                    if (['cylinderTeeth', 'labelSizeAround', 'gapAcrossMM', 'labelSizeAcross', 'materialMarginMM'].includes(input.id)) {
+                        updateCylinderSizes();
+                    } else {
+                        calculateAllCosts();
+                    }
+                });
             });
             
-            // Auto-resize textarea
-            const textarea = DOMElements.materialType;
-            textarea.addEventListener('input', () => {
-                textarea.style.height = 'auto';
-                textarea.style.height = (textarea.scrollHeight) + 'px';
-            });
-            
-            // Event listener for the Save Full Sheet button
-            if (DOMElements.saveFullSheetBtn) {
-                DOMElements.saveFullSheetBtn.addEventListener('click', () => {
+            // NEW EVENT LISTENER FOR THE SAVE BUTTON
+            if (DOMElements.saveAsImageBtn) {
+                DOMElements.saveAsImageBtn.addEventListener('click', () => {
                     html2canvas(DOMElements.captureArea).then(canvas => {
                         const link = document.createElement('a');
-                        link.download = 'full-cost-sheet.png';
-                        link.href = canvas.toDataURL('image/png');
-                        link.click();
-                    });
-                });
-            }
-            
-            // Event listener for the Save Manufacturer Summary button
-            if (DOMElements.saveMfgSummaryBtn) {
-                DOMElements.saveMfgSummaryBtn.addEventListener('click', () => {
-                    html2canvas(DOMElements.manufacturerSummaryArea).then(canvas => {
-                        const link = document.createElement('a');
-                        link.download = 'manufacturer-summary.png';
+                        link.download = 'cost-sheet.png';
                         link.href = canvas.toDataURL('image/png');
                         link.click();
                     });
@@ -939,7 +831,7 @@
             }
 
             // Initial calculations on page load
-            updateAllCalculations();
+            updateCylinderSizes();
         }
 
         // Initialize the app
