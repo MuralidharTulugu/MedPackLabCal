@@ -8,6 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- html2canvas Library for saving as image -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Identity Services (GIS) for OAuth -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Google API Client Library for Sheets/Drive -->
+    <script src="https://apis.google.com/js/api.js" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -146,7 +150,22 @@
 <body class="p-4 sm:p-6 md:p-8">
     <!-- This is the main container that will be captured as an image -->
     <div id="capture" class="container mx-auto bg-white shadow-lg rounded-lg p-6">
-        <h1 class="text-3xl font-bold text-left text-blue-800 mb-12 tracking-tight">Label Costing Calculator</h1>
+        <!-- Auth Header -->
+        <div id="authHeader" class="flex justify-between items-center mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div>
+                <h1 class="text-3xl font-bold text-left text-blue-800 tracking-tight">Label Costing Calculator</h1>
+                <p id="userInfo" class="text-sm text-gray-600 mt-1 hidden">Signed in as <span id="userEmail"></span></p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="syncStatus" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 hidden">Offline</span>
+                <button id="signInBtn" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors" style="display:none;">
+                    Sign in with Google
+                </button>
+                <button id="signOutBtn" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors hidden">
+                    Sign Out
+                </button>
+            </div>
+        </div>
 
         <!-- Main Input Screen -->
         <section class="mb-8">
@@ -576,7 +595,14 @@
                 
                 // New Button
                 saveAsImageBtn: document.getElementById('saveAsImageBtn'),
-                captureArea: document.getElementById('capture')
+                captureArea: document.getElementById('capture'),
+                
+                // Auth Elements (Phase 1)
+                signInBtn: document.getElementById('signInBtn'),
+                signOutBtn: document.getElementById('signOutBtn'),
+                userInfo: document.getElementById('userInfo'),
+                userEmail: document.getElementById('userEmail'),
+                syncStatus: document.getElementById('syncStatus')
             };
         }
 
@@ -789,9 +815,382 @@
             if (DOMElements.detailedCalculationTableBody) DOMElements.detailedCalculationTableBody.innerHTML = tableHTML;
         }
 
+        // ============================================================
+        // PHASE 1: GOOGLE AUTH + SHEETS INTEGRATION
+        // ============================================================
+        
+        // --- Configuration ---
+        const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // REPLACE WITH YOUR CLIENT ID
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+        const SPREADSHEET_NAME = 'MedPackLabCal Quotes';
+        const SHEETS = {
+            CUSTOMERS: 'Customers',
+            QUOTES: 'Quotes',
+            TEMPLATES: 'Templates'
+        };
+
+        // --- Auth State ---
+        let gisTokenClient = null;
+        let gapiClient = null;
+        let currentUser = null;
+        let accessToken = null;
+        let spreadsheetId = null;
+        let isOnline = navigator.onLine;
+
+        // --- DOM Elements for Auth ---
+        const authElements = {
+            signInBtn: document.getElementById('signInBtn'),
+            signOutBtn: document.getElementById('signOutBtn'),
+            userInfo: document.getElementById('userInfo'),
+            userEmail: document.getElementById('userEmail'),
+            syncStatus: document.getElementById('syncStatus')
+        };
+
+        // --- Initialize Google Identity Services (GIS) ---
+        function initGIS() {
+            if (typeof google === 'undefined' || !google.accounts) {
+                console.warn('GIS not loaded yet, retrying...');
+                setTimeout(initGIS, 500);
+                return;
+            }
+
+            gisTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    if (tokenResponse.error) {
+                        console.error('Token error:', tokenResponse.error);
+                        updateSyncStatus('Auth failed', 'bg-red-100 text-red-700');
+                        return;
+                    }
+                    accessToken = tokenResponse.access_token;
+                    console.log('Access token obtained');
+                    loadGapiClient();
+                }
+            });
+
+            // Listen for sign-in state changes
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleCredentialResponse
+            });
+
+            // Check if user is already signed in
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    console.log('GIS prompt not displayed:', notification.getNotDisplayedReason());
+                }
+            });
+
+            // Attach button handlers
+            if (authElements.signInBtn) {
+                authElements.signInBtn.addEventListener('click', () => {
+                    gisTokenClient.requestAccessToken({ prompt: 'consent' });
+                });
+            }
+            if (authElements.signOutBtn) {
+                authElements.signOutBtn.addEventListener('click', signOut);
+            }
+
+            updateAuthUI(false);
+        }
+
+        function handleCredentialResponse(response) {
+            // This is for One Tap / ID token - we use token client for access token
+            console.log('Credential response received');
+        }
+
+        // --- Initialize Google API Client (gapi) ---
+        function loadGapiClient() {
+            if (typeof gapi === 'undefined') {
+                console.warn('gapi not loaded yet, retrying...');
+                setTimeout(loadGapiClient, 500);
+                return;
+            }
+
+            gapi.load('client', async () => {
+                try {
+                    await gapi.client.init({
+                        discoveryDocs: [
+                            'https://sheets.googleapis.com/$discovery/rest?version=v4',
+                            'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                        ]
+                    });
+                    gapiClient = gapi.client;
+                    console.log('GAPI client initialized');
+                    
+                    // Set access token for subsequent requests
+                    gapiClient.setToken({ access_token: accessToken });
+                    
+                    // Get user info
+                    await fetchUserInfo();
+                    
+                    // Ensure spreadsheet exists
+                    await ensureSpreadsheet();
+                    
+                    updateAuthUI(true);
+                    updateSyncStatus('Connected', 'bg-green-100 text-green-700');
+                } catch (err) {
+                    console.error('GAPI init error:', err);
+                    updateSyncStatus('Init failed', 'bg-red-100 text-red-700');
+                }
+            });
+        }
+
+        async function fetchUserInfo() {
+            try {
+                const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                });
+                const userInfo = await response.json();
+                currentUser = userInfo;
+                if (authElements.userEmail) authElements.userEmail.textContent = userInfo.email;
+                console.log('Signed in as:', userInfo.email);
+            } catch (err) {
+                console.error('Failed to fetch user info:', err);
+            }
+        }
+
+        // --- Spreadsheet Management ---
+        async function ensureSpreadsheet() {
+            // First, try to find existing spreadsheet
+            spreadsheetId = await findSpreadsheet();
+            
+            if (!spreadsheetId) {
+                // Create new spreadsheet
+                spreadsheetId = await createSpreadsheet();
+            }
+            
+            // Ensure sheets exist with headers
+            await ensureSheets();
+            
+            console.log('Spreadsheet ready:', spreadsheetId);
+            return spreadsheetId;
+        }
+
+        async function findSpreadsheet() {
+            try {
+                const response = await gapiClient.drive.files.list({
+                    q: `name='${SPREADSHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+                    fields: 'files(id,name)',
+                    spaces: 'drive'
+                });
+                
+                if (response.result.files && response.result.files.length > 0) {
+                    return response.result.files[0].id;
+                }
+            } catch (err) {
+                console.error('Error finding spreadsheet:', err);
+            }
+            return null;
+        }
+
+        async function createSpreadsheet() {
+            try {
+                // Create spreadsheet via Sheets API
+                const response = await gapiClient.sheets.spreadsheets.create({
+                    properties: { title: SPREADSHEET_NAME }
+                });
+                
+                const newSpreadsheetId = response.result.spreadsheetId;
+                console.log('Created spreadsheet:', newSpreadsheetId);
+                return newSpreadsheetId;
+            } catch (err) {
+                console.error('Error creating spreadsheet:', err);
+                throw err;
+            }
+        }
+
+        async function ensureSheets() {
+            const sheetConfigs = [
+                { name: SHEETS.CUSTOMERS, headers: ['CustomerID', 'Name', 'Phone', 'Email', 'CreatedAt', 'UpdatedAt'] },
+                { name: SHEETS.QUOTES, headers: ['QuoteID', 'CustomerID', 'QuoteName', 'Status', 'Version', 'CreatedAt', 'UpdatedAt', 'InputsJSON', 'OutputsJSON', 'Notes'] },
+                { name: SHEETS.TEMPLATES, headers: ['TemplateID', 'Name', 'Category', 'InputsJSON'] }
+            ];
+
+            // Get existing sheets
+            const meta = await gapiClient.sheets.spreadsheets.get({ spreadsheetId });
+            const existingSheets = meta.result.sheets.map(s => s.properties.title);
+
+            const requests = [];
+            for (const config of sheetConfigs) {
+                if (!existingSheets.includes(config.name)) {
+                    requests.push({
+                        addSheet: {
+                            properties: { title: config.name, gridProperties: { frozenRowCount: 1 } }
+                        }
+                    });
+                }
+            }
+
+            if (requests.length > 0) {
+                await gapiClient.sheets.spreadsheets.batchUpdate({
+                    spreadsheetId,
+                    requests
+                });
+                console.log('Added missing sheets');
+            }
+
+            // Ensure headers exist in each sheet
+            for (const config of sheetConfigs) {
+                await ensureHeaders(config.name, config.headers);
+            }
+        }
+
+        async function ensureHeaders(sheetName, headers) {
+            try {
+                const response = await gapiClient.sheets.spreadsheets.values.get({
+                    spreadsheetId,
+                    range: `${sheetName}!A1:${String.fromCharCode(65 + headers.length - 1)}1`
+                });
+                
+                const existingHeaders = response.result.values?.[0] || [];
+                if (existingHeaders.length === 0 || JSON.stringify(existingHeaders) !== JSON.stringify(headers)) {
+                    await gapiClient.sheets.spreadsheets.values.update({
+                        spreadsheetId,
+                        range: `${sheetName}!A1`,
+                        valueInputOption: 'RAW',
+                        resource: { values: [headers] }
+                    });
+                    console.log(`Headers set for ${sheetName}`);
+                }
+            } catch (err) {
+                console.error(`Error ensuring headers for ${sheetName}:`, err);
+            }
+        }
+
+        // --- Sheets Read/Write Helpers ---
+        async function readSheet(sheetName) {
+            try {
+                const response = await gapiClient.sheets.spreadsheets.values.get({
+                    spreadsheetId,
+                    range: sheetName
+                });
+                return response.result.values || [];
+            } catch (err) {
+                console.error(`Error reading ${sheetName}:`, err);
+                return [];
+            }
+        }
+
+        async function appendRow(sheetName, values) {
+            try {
+                const response = await gapiClient.sheets.spreadsheets.values.append({
+                    spreadsheetId,
+                    range: sheetName,
+                    valueInputOption: 'USER_ENTERED',
+                    insertDataOption: 'INSERT_ROWS',
+                    resource: { values: [values] }
+                });
+                return response.result.updates.updatedRange;
+            } catch (err) {
+                console.error(`Error appending to ${sheetName}:`, err);
+                throw err;
+            }
+        }
+
+        async function updateRow(sheetName, rowIndex, values) {
+            try {
+                const colLetter = String.fromCharCode(65 + values.length - 1);
+                const response = await gapiClient.sheets.spreadsheets.values.update({
+                    spreadsheetId,
+                    range: `${sheetName}!A${rowIndex}:${colLetter}${rowIndex}`,
+                    valueInputOption: 'USER_ENTERED',
+                    resource: { values: [values] }
+                });
+                return response.result;
+            } catch (err) {
+                console.error(`Error updating row in ${sheetName}:`, err);
+                throw err;
+            }
+        }
+
+        // --- Test Function: Save Test Row ---
+        async function saveTestRow() {
+            if (!spreadsheetId) {
+                alert('Spreadsheet not ready yet');
+                return;
+            }
+            
+            const testData = [
+                `TEST-${Date.now()}`,
+                'Test Customer',
+                '1234567890',
+                'test@example.com',
+                new Date().toISOString(),
+                new Date().toISOString()
+            ];
+            
+            try {
+                await appendRow(SHEETS.CUSTOMERS, testData);
+                alert('Test row saved! Check your Google Sheets.');
+                updateSyncStatus('Saved', 'bg-green-100 text-green-700');
+                setTimeout(() => updateSyncStatus('Connected', 'bg-green-100 text-green-700'), 2000);
+            } catch (err) {
+                alert('Failed to save test row: ' + err.message);
+                updateSyncStatus('Save failed', 'bg-red-100 text-red-700');
+            }
+        }
+
+        // --- Auth UI Helpers ---
+        function updateAuthUI(signedIn) {
+            if (signedIn && currentUser) {
+                authElements.signInBtn?.classList.add('hidden');
+                authElements.signOutBtn?.classList.remove('hidden');
+                authElements.userInfo?.classList.remove('hidden');
+                authElements.syncStatus?.classList.remove('hidden');
+            } else {
+                authElements.signInBtn?.classList.remove('hidden');
+                authElements.signOutBtn?.classList.add('hidden');
+                authElements.userInfo?.classList.add('hidden');
+                authElements.syncStatus?.classList.add('hidden');
+            }
+        }
+
+        function updateSyncStatus(text, classes) {
+            if (authElements.syncStatus) {
+                authElements.syncStatus.textContent = text;
+                authElements.syncStatus.className = `text-xs px-2 py-1 rounded-full ${classes}`;
+            }
+        }
+
+        function signOut() {
+            if (accessToken) {
+                google.accounts.oauth2.revoke(accessToken, () => {
+                    console.log('Access token revoked');
+                });
+            }
+            google.accounts.id.disableAutoSelect();
+            
+            accessToken = null;
+            currentUser = null;
+            spreadsheetId = null;
+            gapiClient = null;
+            
+            updateAuthUI(false);
+            updateSyncStatus('Signed out', 'bg-gray-100 text-gray-600');
+        }
+
+        // --- Online/Offline Detection ---
+        window.addEventListener('online', () => {
+            isOnline = true;
+            if (currentUser) updateSyncStatus('Connected', 'bg-green-100 text-green-700');
+        });
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateSyncStatus('Offline', 'bg-yellow-100 text-yellow-700');
+        });
+
+        // ============================================================
+        // END PHASE 1 CODE
+        // ============================================================
+
         // --- Event Listeners ---
         function attachEventListeners() {
             initializeDOMElements();
+
+            // Initialize Google Auth (Phase 1)
+            initGoogleAuth();
 
             // Populate Cylinder Teeth dropdown
             if (DOMElements.cylinderTeethSelect) {
@@ -828,6 +1227,27 @@
                         link.click();
                     });
                 });
+            }
+
+            // Phase 1: Test Sheets button
+            if (DOMElements.testSheetsBtn) {
+                DOMElements.testSheetsBtn.addEventListener('click', testSheetsConnection);
+            }
+
+            // Phase 1: Sign In button
+            if (DOMElements.signInBtn) {
+                DOMElements.signInBtn.addEventListener('click', () => {
+                    google.accounts.oauth2.initTokenClient({
+                        client_id: CLIENT_ID,
+                        scope: SCOPES,
+                        callback: handleTokenResponse
+                    }).requestAccessToken();
+                });
+            }
+
+            // Phase 1: Sign Out button
+            if (DOMElements.signOutBtn) {
+                DOMElements.signOutBtn.addEventListener('click', signOut);
             }
 
             // Initial calculations on page load
