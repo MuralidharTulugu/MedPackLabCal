@@ -151,13 +151,13 @@ Authorized Redirect URIs:
 **Goal**: Full customer/quote management via Sheets
 
 **Tasks**:
-- [ ] Customer autocomplete (read `Customers` sheet on focus/typing)
-- [ ] "New Customer" modal → append to `Customers` sheet
-- [ ] "Save Quote" → serialize all inputs + outputs → append to `Quotes`
-- [ ] "Load Quotes" → filter `Quotes` by CustomerID → display list
-- [ ] "Load Quote" → populate all inputs from `InputsJSON`, recalc
-- [ ] Versioning: increment Version on re-save
-- [ ] Offline queue (IndexedDB) → sync when online
+- [x] Customer autocomplete (datalist populated from `Customers` sheet on sign-in)
+- [x] "New Customer" modal → append to `Customers` sheet
+- [x] "Save Quote" → serialize all inputs + outputs → append to `Quotes`
+- [x] "Load Quotes" → filter `Quotes` by CustomerID → display list ("My Quotes" modal)
+- [x] "Load Quote" → populate all inputs from `InputsJSON`, recalc
+- [x] Versioning: each Save appends a new version row (never overwrites); "My Quotes" shows latest version per quote, full history stays in the sheet
+- [x] Offline queue (IndexedDB) → flushes on reconnect. Scope note: only new quote/customer saves are queued offline; editing/re-saving an already-loaded quote still requires being online (each save is an append, so this only affects when the write reaches the sheet, not data safety)
 
 **UI Additions**:
 - Customer selector (dropdown + "New Customer" button)

@@ -6,8 +6,6 @@
     <title>Label Costing Calculator</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2canvas Library for saving as image -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Google Identity Services (GIS) for OAuth -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Google API Client Library for Sheets/Drive -->
@@ -158,12 +156,60 @@
             </div>
             <div class="flex items-center gap-3">
                 <span id="syncStatus" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 hidden">Offline</span>
-                <button id="signInBtn" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors" style="display:none;">
+                <button id="signInBtn" class="bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
                     Sign in with Google
                 </button>
                 <button id="signOutBtn" class="bg-gray-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors hidden">
                     Sign Out
                 </button>
+            </div>
+        </div>
+
+        <!-- Quote Management Bar (Phase 2) -->
+        <div id="quoteBar" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div class="flex flex-wrap gap-3 mb-3">
+                <button id="myQuotesBtn" class="bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50" disabled>
+                    My Quotes
+                </button>
+                <button id="newCustomerBtn" class="bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50" disabled>
+                    + New Customer
+                </button>
+            </div>
+            <div class="min-w-[200px]">
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="customerNameInput">Customer</label>
+                <input type="text" id="customerNameInput" list="customerList" placeholder="Type or select a customer"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <datalist id="customerList"></datalist>
+            </div>
+            <div class="w-full text-xs text-gray-500 mt-3" id="quoteStatusLine">Sign in to save and load quotes.</div>
+        </div>
+
+        <!-- New Customer Modal -->
+        <div id="newCustomerModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4">
+                <h3 class="text-lg font-bold mb-4">New Customer</h3>
+                <div class="space-y-3">
+                    <input type="text" id="newCustomerName" placeholder="Customer name" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <input type="text" id="newCustomerPhone" placeholder="Phone (optional)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <input type="email" id="newCustomerEmail" placeholder="Email (optional)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div class="flex justify-end gap-2 mt-5">
+                    <button id="newCustomerCancelBtn" class="text-sm font-medium py-2 px-4 rounded-lg text-gray-600 hover:bg-gray-100">Cancel</button>
+                    <button id="newCustomerSaveBtn" class="bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-blue-700">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Quotes Modal -->
+        <div id="myQuotesModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold" id="myQuotesTitle">My Quotes</h3>
+                    <button id="myQuotesCloseBtn" class="text-gray-500 hover:text-gray-800 text-xl leading-none">&times;</button>
+                </div>
+                <div id="myQuotesList" class="space-y-2 text-sm">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
             </div>
         </div>
 
@@ -507,10 +553,15 @@
         </section>
     </div>
 
-    <!-- "SAVE AS IMAGE" BUTTON -->
-    <div class="container mx-auto mt-8 text-center">
-        <button id="saveAsImageBtn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-300">
-            Save as Image
+    <!-- Save Quote (Phase 2) -->
+    <div class="container mx-auto mt-8 mb-4 flex flex-wrap items-end justify-center gap-3">
+        <div class="flex-1 min-w-[220px] max-w-xs">
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="quoteNameInput">Quote Name</label>
+            <input type="text" id="quoteNameInput" placeholder="e.g. Batch of 50,000 - July"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <button id="saveQuoteBtn" class="bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50" disabled>
+            Save Quote
         </button>
     </div>
 
@@ -592,11 +643,7 @@
 
                 // Table Body
                 detailedCalculationTableBody: document.getElementById('detailedCalculationTableBody'),
-                
-                // New Button
-                saveAsImageBtn: document.getElementById('saveAsImageBtn'),
-                captureArea: document.getElementById('capture'),
-                
+
                 // Auth Elements (Phase 1)
                 signInBtn: document.getElementById('signInBtn'),
                 signOutBtn: document.getElementById('signOutBtn'),
@@ -927,9 +974,20 @@
                     
                     // Ensure spreadsheet exists
                     await ensureSpreadsheet();
-                    
+
                     updateAuthUI(true);
                     updateSyncStatus('Connected', 'bg-green-100 text-green-700');
+
+                    // Phase 2: load customers, enable quote UI, flush any offline writes
+                    try {
+                        await loadCustomers();
+                        populateCustomerDatalist();
+                        setQuoteControlsEnabled(true);
+                        updateQuoteStatusLine();
+                        await flushOfflineQueue();
+                    } catch (err2) {
+                        console.error('Phase 2 init error:', err2);
+                    }
                 } catch (err) {
                     console.error('GAPI init error:', err);
                     updateSyncStatus('Init failed', 'bg-red-100 text-red-700');
@@ -1166,15 +1224,27 @@
             currentUser = null;
             spreadsheetId = null;
             gapiClient = null;
-            
+
             updateAuthUI(false);
             updateSyncStatus('Signed out', 'bg-gray-100 text-gray-600');
+
+            // Phase 2: reset quote/customer state on sign-out
+            customersCache = [];
+            currentCustomerId = null;
+            currentCustomerName = '';
+            currentQuoteId = null;
+            currentQuoteVersion = 0;
+            if (quoteElements.customerNameInput) quoteElements.customerNameInput.value = '';
+            if (quoteElements.quoteNameInput) quoteElements.quoteNameInput.value = '';
+            setQuoteControlsEnabled(false);
+            updateQuoteStatusLine();
         }
 
         // --- Online/Offline Detection ---
         window.addEventListener('online', () => {
             isOnline = true;
             if (currentUser) updateSyncStatus('Connected', 'bg-green-100 text-green-700');
+            flushOfflineQueue();
         });
         window.addEventListener('offline', () => {
             isOnline = false;
@@ -1185,12 +1255,427 @@
         // END PHASE 1 CODE
         // ============================================================
 
+        // ============================================================
+        // PHASE 2: CUSTOMER & QUOTE CRUD
+        // ============================================================
+
+        const INPUT_FIELD_IDS = [
+            'orderQuantity', 'labelSizeAcross', 'labelSizeAround', 'gapAcrossMM',
+            'cylinderTeeth', 'wastagePercentage', 'rawMaterialPrice', 'productionRate',
+            'setupTimeHours', 'productionCostPerHour', 'totalGSM', 'varnishCost',
+            'foilCost', 'coldLaminationCost', 'saLaminationCost', 'inkPricePercentage',
+            'numPlates', 'totalPlateCost', 'dieQuantity', 'totalDieCost',
+            'transportCostPercentage', 'transportCostDirect', 'slittingCostPerLabel',
+            'digitalPrintingCost', 'packingCostPercentage', 'marginPercentage',
+            'materialMarginMM', 'labelNosAcross', 'materialWidthMM',
+            'inputNForAround', 'inputLabelGapAroundMM'
+        ];
+
+        const OUTPUT_FIELD_IDS = [
+            'cylinderSizeInches', 'cylinderSizeMM', 'totalMaterialRequiredMeters',
+            'totalSquareMetersRequired', 'rawMaterialCostTotal', 'wastageInMeters',
+            'productionTimeHoursOutput', 'productionCostOutput', 'varnishCostOutput',
+            'foilCostOutput', 'coldLaminationCostOutput', 'saLaminationCostOutput',
+            'inkCostCalculated', 'inkCostRatio', 'slittingCostOutput',
+            'digitalPrintingCostOutput', 'packingCostOutput', 'shipmentWeight',
+            'totalCostFinal', 'basicCostPerLabel', 'marginAmountPerLabel',
+            'sellingPricePerLabel', 'totalSellingValue'
+        ];
+
+        // --- Quote/Customer State ---
+        let customersCache = [];
+        let currentCustomerId = null;
+        let currentCustomerName = '';
+        let currentQuoteId = null;
+        let currentQuoteVersion = 0;
+
+        const quoteElements = {
+            customerNameInput: document.getElementById('customerNameInput'),
+            customerList: document.getElementById('customerList'),
+            newCustomerBtn: document.getElementById('newCustomerBtn'),
+            quoteNameInput: document.getElementById('quoteNameInput'),
+            saveQuoteBtn: document.getElementById('saveQuoteBtn'),
+            myQuotesBtn: document.getElementById('myQuotesBtn'),
+            quoteStatusLine: document.getElementById('quoteStatusLine'),
+            newCustomerModal: document.getElementById('newCustomerModal'),
+            newCustomerName: document.getElementById('newCustomerName'),
+            newCustomerPhone: document.getElementById('newCustomerPhone'),
+            newCustomerEmail: document.getElementById('newCustomerEmail'),
+            newCustomerCancelBtn: document.getElementById('newCustomerCancelBtn'),
+            newCustomerSaveBtn: document.getElementById('newCustomerSaveBtn'),
+            myQuotesModal: document.getElementById('myQuotesModal'),
+            myQuotesTitle: document.getElementById('myQuotesTitle'),
+            myQuotesList: document.getElementById('myQuotesList'),
+            myQuotesCloseBtn: document.getElementById('myQuotesCloseBtn')
+        };
+
+        function setQuoteControlsEnabled(enabled) {
+            [quoteElements.newCustomerBtn, quoteElements.saveQuoteBtn, quoteElements.myQuotesBtn].forEach(btn => {
+                if (btn) btn.disabled = !enabled;
+            });
+        }
+
+        function updateQuoteStatusLine() {
+            if (!quoteElements.quoteStatusLine) return;
+            if (!currentUser) {
+                quoteElements.quoteStatusLine.textContent = 'Sign in to save and load quotes.';
+                return;
+            }
+            const customerPart = currentCustomerName ? `Customer: ${currentCustomerName}` : 'No customer selected';
+            const quotePart = currentQuoteId ? `Quote: ${quoteElements.quoteNameInput?.value || 'Untitled'} (v${currentQuoteVersion})` : 'New (unsaved) quote';
+            quoteElements.quoteStatusLine.textContent = `${customerPart} · ${quotePart}`;
+        }
+
+        // --- Serialization ---
+        function serializeInputs() {
+            const data = {};
+            INPUT_FIELD_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) data[id] = el.value;
+            });
+            return data;
+        }
+
+        function serializeOutputs() {
+            const data = {};
+            OUTPUT_FIELD_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) data[id] = el.textContent;
+            });
+            return data;
+        }
+
+        function deserializeInputs(inputs) {
+            if (!inputs) return;
+            INPUT_FIELD_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && Object.prototype.hasOwnProperty.call(inputs, id)) {
+                    el.value = inputs[id];
+                }
+            });
+            updateCylinderSizes(); // recalculates everything, including calculateAllCosts()
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        // --- Customer Management ---
+        async function loadCustomers() {
+            const rows = await readSheet(SHEETS.CUSTOMERS);
+            customersCache = rows.slice(1)
+                .filter(r => r[0])
+                .map(r => ({
+                    CustomerID: r[0], Name: r[1] || '', Phone: r[2] || '',
+                    Email: r[3] || '', CreatedAt: r[4] || '', UpdatedAt: r[5] || ''
+                }));
+            return customersCache;
+        }
+
+        function populateCustomerDatalist() {
+            if (!quoteElements.customerList) return;
+            quoteElements.customerList.innerHTML = customersCache
+                .map(c => `<option value="${escapeHtml(c.Name)}"></option>`)
+                .join('');
+        }
+
+        function findCustomerByName(name) {
+            const target = (name || '').trim().toLowerCase();
+            if (!target) return null;
+            return customersCache.find(c => c.Name.trim().toLowerCase() === target) || null;
+        }
+
+        async function createCustomer(name, phone, email) {
+            const customerId = crypto.randomUUID();
+            const now = new Date().toISOString();
+            await appendRow(SHEETS.CUSTOMERS, [customerId, name, phone || '', email || '', now, now]);
+            customersCache.push({ CustomerID: customerId, Name: name, Phone: phone || '', Email: email || '', CreatedAt: now, UpdatedAt: now });
+            populateCustomerDatalist();
+            return customerId;
+        }
+
+        function selectCustomer(customer) {
+            currentCustomerId = customer ? customer.CustomerID : null;
+            currentCustomerName = customer ? customer.Name : '';
+            // Switching customer starts a fresh (unsaved) quote
+            currentQuoteId = null;
+            currentQuoteVersion = 0;
+            // Default the quote name to the customer's name; user can still edit it before saving
+            if (quoteElements.quoteNameInput) {
+                quoteElements.quoteNameInput.value = currentCustomerName;
+            }
+            updateQuoteStatusLine();
+        }
+
+        // --- Quote Management ---
+        async function saveQuote() {
+            if (!spreadsheetId) {
+                alert('Please sign in first.');
+                return;
+            }
+            if (!currentCustomerId) {
+                alert('Select an existing customer or create a new one before saving a quote.');
+                return;
+            }
+            const quoteName = (quoteElements.quoteNameInput?.value || '').trim();
+            if (!quoteName) {
+                alert('Please enter a quote name.');
+                return;
+            }
+
+            const inputs = serializeInputs();
+            const outputs = serializeOutputs();
+            const now = new Date().toISOString();
+            const isNewQuote = !currentQuoteId;
+            const quoteId = isNewQuote ? crypto.randomUUID() : currentQuoteId;
+            const version = isNewQuote ? 1 : currentQuoteVersion + 1;
+
+            const row = [
+                quoteId, currentCustomerId, quoteName, 'Draft', version,
+                now, now, JSON.stringify(inputs), JSON.stringify(outputs), ''
+            ];
+
+            try {
+                if (isOnline) {
+                    await appendRow(SHEETS.QUOTES, row);
+                } else {
+                    await queueWrite('append', SHEETS.QUOTES, row);
+                }
+                currentQuoteId = quoteId;
+                currentQuoteVersion = version;
+                updateQuoteStatusLine();
+                updateSyncStatus(isOnline ? 'Saved' : 'Saved offline', isOnline ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700');
+                setTimeout(() => updateSyncStatus('Connected', 'bg-green-100 text-green-700'), 2000);
+            } catch (err) {
+                console.error('Error saving quote:', err);
+                alert('Failed to save quote: ' + err.message);
+            }
+        }
+
+        function safeParseJSON(str) {
+            try { return JSON.parse(str || '{}'); } catch (e) { return {}; }
+        }
+
+        async function loadAllQuotes() {
+            const rows = await readSheet(SHEETS.QUOTES);
+            return rows.slice(1)
+                .filter(r => r[0])
+                .map(r => ({
+                    QuoteID: r[0], CustomerID: r[1], QuoteName: r[2] || '',
+                    Status: r[3] || 'Draft', Version: parseInt(r[4], 10) || 1,
+                    CreatedAt: r[5] || '', UpdatedAt: r[6] || '',
+                    InputsJSON: safeParseJSON(r[7]), OutputsJSON: safeParseJSON(r[8]),
+                    Notes: r[9] || ''
+                }))
+                .sort((a, b) => new Date(b.UpdatedAt) - new Date(a.UpdatedAt));
+        }
+
+        function loadQuote(quote) {
+            deserializeInputs(quote.InputsJSON);
+            currentQuoteId = quote.QuoteID;
+            currentQuoteVersion = quote.Version;
+            if (quoteElements.quoteNameInput) quoteElements.quoteNameInput.value = quote.QuoteName;
+            updateQuoteStatusLine();
+        }
+
+        // Loading a quote from "My Quotes" also switches the selected customer to whoever the quote belongs to
+        function applyLoadedQuote(quote) {
+            const customer = customersCache.find(c => c.CustomerID === quote.CustomerID);
+            currentCustomerId = quote.CustomerID;
+            currentCustomerName = customer ? customer.Name : '(customer not found)';
+            if (quoteElements.customerNameInput) quoteElements.customerNameInput.value = currentCustomerName;
+            loadQuote(quote);
+        }
+
+        function showModal(modalEl) {
+            if (modalEl) modalEl.classList.remove('hidden');
+        }
+        function hideModal(modalEl) {
+            if (modalEl) modalEl.classList.add('hidden');
+        }
+
+        async function openMyQuotesModal() {
+            if (quoteElements.myQuotesList) quoteElements.myQuotesList.innerHTML = '<p class="text-gray-500">Loading...</p>';
+            showModal(quoteElements.myQuotesModal);
+
+            try {
+                const quotes = await loadAllQuotes();
+                renderQuotesList(quotes);
+            } catch (err) {
+                console.error('Error loading quotes:', err);
+                if (quoteElements.myQuotesList) quoteElements.myQuotesList.innerHTML = '<p class="text-red-600">Failed to load quotes.</p>';
+            }
+        }
+
+        function customerNameById(customerId) {
+            const c = customersCache.find(c => c.CustomerID === customerId);
+            return c ? c.Name : '(unknown customer)';
+        }
+
+        function renderQuotesList(quotes) {
+            if (!quoteElements.myQuotesList) return;
+            if (quotes.length === 0) {
+                quoteElements.myQuotesList.innerHTML = '<p class="text-gray-500">No saved quotes yet. Select or create a customer, fill in a quote, then Save it to see it here.</p>';
+                return;
+            }
+            // Show only the latest version per QuoteID (full history stays in the sheet)
+            const latestByQuoteId = new Map();
+            quotes.forEach(q => {
+                const existing = latestByQuoteId.get(q.QuoteID);
+                if (!existing || q.Version > existing.Version) latestByQuoteId.set(q.QuoteID, q);
+            });
+
+            quoteElements.myQuotesList.innerHTML = Array.from(latestByQuoteId.values()).map(q => `
+                <div class="flex justify-between items-center border border-gray-200 rounded-lg px-3 py-2">
+                    <div>
+                        <div class="font-medium">${escapeHtml(q.QuoteName)} <span class="text-xs text-gray-500">v${q.Version} · ${escapeHtml(q.Status)}</span></div>
+                        <div class="text-xs text-gray-500">${escapeHtml(customerNameById(q.CustomerID))} · ${q.UpdatedAt ? new Date(q.UpdatedAt).toLocaleString() : ''}</div>
+                    </div>
+                    <button data-quote-id="${q.QuoteID}" class="load-quote-btn bg-blue-600 text-white text-xs font-medium py-1.5 px-3 rounded-lg hover:bg-blue-700">Load</button>
+                </div>
+            `).join('');
+
+            quoteElements.myQuotesList.querySelectorAll('.load-quote-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const quote = quotes.find(q => q.QuoteID === btn.dataset.quoteId);
+                    if (quote) {
+                        applyLoadedQuote(quote);
+                        hideModal(quoteElements.myQuotesModal);
+                    }
+                });
+            });
+        }
+
+        // --- Offline Queue (IndexedDB) ---
+        const OFFLINE_DB_NAME = 'MedPackLabCalOffline';
+        const OFFLINE_STORE_NAME = 'pendingWrites';
+
+        function openOfflineDB() {
+            return new Promise((resolve, reject) => {
+                if (!('indexedDB' in window)) { reject(new Error('IndexedDB not supported')); return; }
+                const request = indexedDB.open(OFFLINE_DB_NAME, 1);
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(OFFLINE_STORE_NAME)) {
+                        db.createObjectStore(OFFLINE_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function queueWrite(operation, sheetName, data) {
+            try {
+                const db = await openOfflineDB();
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(OFFLINE_STORE_NAME, 'readwrite');
+                    tx.objectStore(OFFLINE_STORE_NAME).add({ operation, sheetName, data, timestamp: Date.now() });
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                });
+                updateSyncStatus('Pending sync', 'bg-yellow-100 text-yellow-700');
+            } catch (err) {
+                console.error('Failed to queue offline write:', err);
+                throw err;
+            }
+        }
+
+        async function flushOfflineQueue() {
+            if (!isOnline || !spreadsheetId) return;
+            try {
+                const db = await openOfflineDB();
+                const items = await new Promise((resolve, reject) => {
+                    const tx = db.transaction(OFFLINE_STORE_NAME, 'readonly');
+                    const request = tx.objectStore(OFFLINE_STORE_NAME).getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                for (const item of items) {
+                    try {
+                        if (item.operation === 'append') {
+                            await appendRow(item.sheetName, item.data);
+                        }
+                        const delTx = db.transaction(OFFLINE_STORE_NAME, 'readwrite');
+                        delTx.objectStore(OFFLINE_STORE_NAME).delete(item.id);
+                    } catch (err) {
+                        console.error('Sync failed for queued item, will retry later:', err);
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.error('Error flushing offline queue:', err);
+            }
+        }
+
+        // --- Wire up Quote/Customer event listeners ---
+        function attachQuoteEventListeners() {
+            if (quoteElements.customerNameInput) {
+                quoteElements.customerNameInput.addEventListener('change', () => {
+                    const match = findCustomerByName(quoteElements.customerNameInput.value);
+                    selectCustomer(match);
+                });
+            }
+
+            if (quoteElements.newCustomerBtn) {
+                quoteElements.newCustomerBtn.addEventListener('click', () => {
+                    if (quoteElements.newCustomerName) quoteElements.newCustomerName.value = quoteElements.customerNameInput?.value || '';
+                    if (quoteElements.newCustomerPhone) quoteElements.newCustomerPhone.value = '';
+                    if (quoteElements.newCustomerEmail) quoteElements.newCustomerEmail.value = '';
+                    showModal(quoteElements.newCustomerModal);
+                });
+            }
+            if (quoteElements.newCustomerCancelBtn) {
+                quoteElements.newCustomerCancelBtn.addEventListener('click', () => hideModal(quoteElements.newCustomerModal));
+            }
+            if (quoteElements.newCustomerSaveBtn) {
+                quoteElements.newCustomerSaveBtn.addEventListener('click', async () => {
+                    const name = (quoteElements.newCustomerName?.value || '').trim();
+                    if (!name) { alert('Customer name is required.'); return; }
+                    if (findCustomerByName(name)) { alert('A customer with this name already exists.'); return; }
+                    try {
+                        const customerId = await createCustomer(name, quoteElements.newCustomerPhone?.value, quoteElements.newCustomerEmail?.value);
+                        if (quoteElements.customerNameInput) quoteElements.customerNameInput.value = name;
+                        selectCustomer({ CustomerID: customerId, Name: name });
+                        hideModal(quoteElements.newCustomerModal);
+                    } catch (err) {
+                        console.error('Error creating customer:', err);
+                        alert('Failed to create customer: ' + err.message);
+                    }
+                });
+            }
+
+            if (quoteElements.saveQuoteBtn) {
+                quoteElements.saveQuoteBtn.addEventListener('click', saveQuote);
+            }
+            if (quoteElements.myQuotesBtn) {
+                quoteElements.myQuotesBtn.addEventListener('click', openMyQuotesModal);
+            }
+            if (quoteElements.myQuotesCloseBtn) {
+                quoteElements.myQuotesCloseBtn.addEventListener('click', () => hideModal(quoteElements.myQuotesModal));
+            }
+            if (quoteElements.quoteNameInput) {
+                quoteElements.quoteNameInput.addEventListener('input', updateQuoteStatusLine);
+            }
+        }
+
+        // ============================================================
+        // END PHASE 2 CODE
+        // ============================================================
+
         // --- Event Listeners ---
         function attachEventListeners() {
             initializeDOMElements();
 
             // Initialize Google Auth (Phase 1)
             initGIS();
+
+            // Wire up Customer & Quote CRUD (Phase 2)
+            attachQuoteEventListeners();
+            setQuoteControlsEnabled(false);
+            updateQuoteStatusLine();
 
             // Populate Cylinder Teeth dropdown
             if (DOMElements.cylinderTeethSelect) {
@@ -1217,18 +1702,6 @@
                 });
             });
             
-            // NEW EVENT LISTENER FOR THE SAVE BUTTON
-            if (DOMElements.saveAsImageBtn) {
-                DOMElements.saveAsImageBtn.addEventListener('click', () => {
-                    html2canvas(DOMElements.captureArea).then(canvas => {
-                        const link = document.createElement('a');
-                        link.download = 'cost-sheet.png';
-                        link.href = canvas.toDataURL('image/png');
-                        link.click();
-                    });
-                });
-            }
-
             // Phase 1: Test Sheets button
             if (DOMElements.testSheetsBtn) {
                 DOMElements.testSheetsBtn.addEventListener('click', testSheetsConnection);
