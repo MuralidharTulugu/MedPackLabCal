@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Label Costing Calculator</title>
+    <!-- PWA: manifest, icons, theme color -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#1e40af">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Identity Services (GIS) for OAuth -->
@@ -160,6 +165,11 @@
             .field-box {
                 min-height: 56px;
             }
+        }
+
+        /* Toast notifications (Phase 3) */
+        .toast-item {
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
     </style>
@@ -598,6 +608,9 @@
         </button>
     </div>
 
+    <!-- Toast notifications (Phase 3) -->
+    <div id="toastContainer" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center px-4 w-full max-w-sm pointer-events-none"></div>
+
     <script>
         // --- Data Definitions ---
         const cylinderTeethOptions = [
@@ -945,6 +958,7 @@
                     }
                     accessToken = tokenResponse.access_token;
                     console.log('Access token obtained');
+                    updateSyncStatus('Connecting...', 'bg-blue-100 text-blue-700');
                     loadGapiClient();
                 }
             });
@@ -1016,6 +1030,7 @@
 
                     updateAuthUI(true);
                     updateSyncStatus('Connected', 'bg-green-100 text-green-700');
+                    showToast(`Signed in as ${currentUser?.email || 'your Google account'}.`, 'success');
 
                     // Phase 2: load customers, enable quote UI, flush any offline writes
                     try {
@@ -1026,10 +1041,12 @@
                         await flushOfflineQueue();
                     } catch (err2) {
                         console.error('Phase 2 init error:', err2);
+                        showToast('Signed in, but could not load your customers/quotes: ' + err2.message, 'error');
                     }
                 } catch (err) {
                     console.error('GAPI init error:', err);
                     updateSyncStatus('Init failed', 'bg-red-100 text-red-700');
+                    showToast('Sign-in failed: ' + (err?.result?.error?.message || err?.message || 'unknown error'), 'error');
                 }
             });
         }
@@ -1156,13 +1173,32 @@
             }
         }
 
+        // --- Retry helper (Phase 3) ---
+        // Retries transient failures (flaky mobile networks, brief API hiccups) a couple of
+        // times with a short backoff before giving up. Doesn't help with permanent errors
+        // (bad scope, disabled API) but those fail fast anyway, so the extra attempts are cheap.
+        async function withRetry(fn, retries = 2, delayMs = 700) {
+            let lastErr;
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    return await fn();
+                } catch (err) {
+                    lastErr = err;
+                    if (attempt < retries) {
+                        await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+                    }
+                }
+            }
+            throw lastErr;
+        }
+
         // --- Sheets Read/Write Helpers ---
         async function readSheet(sheetName) {
             try {
-                const response = await gapiClient.sheets.spreadsheets.values.get({
+                const response = await withRetry(() => gapiClient.sheets.spreadsheets.values.get({
                     spreadsheetId,
                     range: sheetName
-                });
+                }));
                 return response.result.values || [];
             } catch (err) {
                 console.error(`Error reading ${sheetName}:`, err);
@@ -1172,13 +1208,13 @@
 
         async function appendRow(sheetName, values) {
             try {
-                const response = await gapiClient.sheets.spreadsheets.values.append({
+                const response = await withRetry(() => gapiClient.sheets.spreadsheets.values.append({
                     spreadsheetId,
                     range: sheetName,
                     valueInputOption: 'USER_ENTERED',
                     insertDataOption: 'INSERT_ROWS',
                     resource: { values: [values] }
-                });
+                }));
                 return response.result.updates.updatedRange;
             } catch (err) {
                 console.error(`Error appending to ${sheetName}:`, err);
@@ -1189,12 +1225,12 @@
         async function updateRow(sheetName, rowIndex, values) {
             try {
                 const colLetter = String.fromCharCode(65 + values.length - 1);
-                const response = await gapiClient.sheets.spreadsheets.values.update({
+                const response = await withRetry(() => gapiClient.sheets.spreadsheets.values.update({
                     spreadsheetId,
                     range: `${sheetName}!A${rowIndex}:${colLetter}${rowIndex}`,
                     valueInputOption: 'USER_ENTERED',
                     resource: { values: [values] }
-                });
+                }));
                 return response.result;
             } catch (err) {
                 console.error(`Error updating row in ${sheetName}:`, err);
@@ -1408,6 +1444,31 @@
             return div.innerHTML;
         }
 
+        // --- Toast notifications (Phase 3) ---
+        // A lightweight, non-blocking replacement for alert() — important on mobile, where a
+        // blocking native alert() feels especially jarring and covers the whole screen.
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) { console.log('[toast]', message); return; }
+
+            const styles = {
+                info: 'bg-gray-800 text-white',
+                success: 'bg-green-600 text-white',
+                error: 'bg-red-600 text-white'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast-item ${styles[type] || styles.info} text-sm font-medium px-4 py-2.5 rounded-lg shadow-lg w-full text-center pointer-events-auto`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(4px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
         // --- Customer Management ---
         async function loadCustomers() {
             const rows = await readSheet(SHEETS.CUSTOMERS);
@@ -1458,16 +1519,16 @@
         // --- Quote Management ---
         async function saveQuote() {
             if (!spreadsheetId) {
-                alert('Please sign in first.');
+                showToast('Please sign in first.', 'error');
                 return;
             }
             if (!currentCustomerId) {
-                alert('Select an existing customer or create a new one before saving a quote.');
+                showToast('Select an existing customer or create a new one before saving a quote.', 'error');
                 return;
             }
             const quoteName = (quoteElements.quoteNameInput?.value || '').trim();
             if (!quoteName) {
-                alert('Please enter a quote name.');
+                showToast('Please enter a quote name.', 'error');
                 return;
             }
 
@@ -1483,6 +1544,10 @@
                 now, now, JSON.stringify(inputs), JSON.stringify(outputs), ''
             ];
 
+            const btn = quoteElements.saveQuoteBtn;
+            const originalLabel = btn ? btn.textContent : '';
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
             try {
                 if (isOnline) {
                     await appendRow(SHEETS.QUOTES, row);
@@ -1493,10 +1558,13 @@
                 currentQuoteVersion = version;
                 updateQuoteStatusLine();
                 updateSyncStatus(isOnline ? 'Saved' : 'Saved offline', isOnline ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700');
+                showToast(isOnline ? 'Quote saved.' : 'Offline — quote queued and will sync once you\'re back online.', 'success');
                 setTimeout(() => updateSyncStatus('Connected', 'bg-green-100 text-green-700'), 2000);
             } catch (err) {
                 console.error('Error saving quote:', err);
-                alert('Failed to save quote: ' + err.message);
+                showToast('Failed to save quote: ' + err.message, 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = originalLabel || 'Save Quote'; }
             }
         }
 
@@ -1552,6 +1620,7 @@
             } catch (err) {
                 console.error('Error loading quotes:', err);
                 if (quoteElements.myQuotesList) quoteElements.myQuotesList.innerHTML = '<p class="text-red-600">Failed to load quotes.</p>';
+                showToast('Failed to load quotes: ' + err.message, 'error');
             }
         }
 
@@ -1679,16 +1748,26 @@
             if (quoteElements.newCustomerSaveBtn) {
                 quoteElements.newCustomerSaveBtn.addEventListener('click', async () => {
                     const name = (quoteElements.newCustomerName?.value || '').trim();
-                    if (!name) { alert('Customer name is required.'); return; }
-                    if (findCustomerByName(name)) { alert('A customer with this name already exists.'); return; }
+                    if (!name) { showToast('Customer name is required.', 'error'); return; }
+                    if (findCustomerByName(name)) { showToast('A customer with this name already exists.', 'error'); return; }
+
+                    const btn = quoteElements.newCustomerSaveBtn;
+                    const originalLabel = btn.textContent;
+                    btn.disabled = true;
+                    btn.textContent = 'Creating...';
+
                     try {
                         const customerId = await createCustomer(name, quoteElements.newCustomerPhone?.value, quoteElements.newCustomerEmail?.value);
                         if (quoteElements.customerNameInput) quoteElements.customerNameInput.value = name;
                         selectCustomer({ CustomerID: customerId, Name: name });
                         hideModal(quoteElements.newCustomerModal);
+                        showToast(`Customer "${name}" created.`, 'success');
                     } catch (err) {
                         console.error('Error creating customer:', err);
-                        alert('Failed to create customer: ' + err.message);
+                        showToast('Failed to create customer: ' + err.message, 'error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = originalLabel;
                     }
                 });
             }
@@ -1765,6 +1844,15 @@
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', attachEventListeners);
+
+        // Phase 3: register the service worker for offline app-shell caching (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch((err) => {
+                    console.error('Service worker registration failed:', err);
+                });
+            });
+        }
 
     </script>
 </body>

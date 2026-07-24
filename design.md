@@ -380,12 +380,14 @@ async function flushQueue() {
 **Goal**: Production-ready experience
 
 **Tasks**:
-- [ ] Service Worker (Workbox) for offline caching
-- [ ] Web App Manifest (installable on Android/Windows)
-- [ ] Loading states, error toasts, retry logic
-- [ ] Export quote as PDF (via Sheets API or html2pdf)
-- [ ] Keyboard shortcuts, accessibility
-- [ ] Responsive tweaks for mobile
+- [x] Service Worker for offline caching — hand-rolled (`sw.js`), not Workbox, to keep the project zero-build-step. Caches the app shell (index.html, manifest, icons); Google sign-in/Sheets/Drive calls always go to network since they need a live connection anyway.
+- [x] Web App Manifest (installable on Android/Windows) — `manifest.json` + `icon-192.png`/`icon-512.png`, linked from `index.html`.
+- [x] Loading states, error toasts, retry logic — non-blocking toast notifications replace `alert()`, Save Quote/New Customer buttons show a disabled "Saving.../Creating..." state, and Sheets API reads/writes retry transient failures automatically (`withRetry`, 2 retries with backoff).
+- [x] Responsive tweaks for mobile
+- ~~Export quote as PDF (via Sheets API or html2pdf)~~ — not required (descoped)
+- ~~Keyboard shortcuts, accessibility~~ — not required (descoped)
+
+**Phase 3 status: COMPLETE** (descoped items excluded).
 
 ---
 
@@ -551,19 +553,26 @@ python3 -m http.server 5173
 
 ---
 
-## File Structure (Target)
+## File Structure (Actual)
 ```
 MedPackLabCal/
-├── index.html          # Main app (calculations + new modules)
-├── design.md           # This file
-├── manifest.json       # PWA manifest (Phase 3)
-├── sw.js               # Service worker (Phase 3)
-├── vercel.json         # Vercel config
-└── README.md           # Setup instructions
+├── index.html          # Entire app: calculations, auth, Sheets/Drive, quote CRUD, PWA registration
+├── manifest.json        # PWA manifest (Phase 3)
+├── sw.js                # Service worker — hand-rolled app-shell cache (Phase 3)
+├── icon-192.png         # PWA icon
+├── icon-512.png         # PWA icon
+├── design.md            # This file
+├── APP_ANALYSIS.md       # Pre-auth structure/calculation reference
+└── SETUP.md             # Full Google Cloud + Cloudflare setup/redeploy/troubleshooting guide
 ```
+
+Deploys as a Cloudflare Worker (Direct Upload of these static files — no build step, no git
+dependency); see `SETUP.md` for the full deploy/redeploy process.
 
 ---
 
-*Last updated: 2026-07-23*
-*Phase 1: COMPLETE - Google Auth + Sheets foundation integrated*
-*Next: Phase 2 implementation - Customer & Quote CRUD*
+*Last updated: 2026-07-24*
+*Phase 1: COMPLETE — Google Auth + Sheets foundation*
+*Phase 2: COMPLETE — Customer & Quote CRUD*
+*Phase 3: COMPLETE — PWA (manifest + service worker), toasts/loading states/retry logic, mobile-friendly styling, sign-in gate (descoped: PDF export, keyboard shortcuts/accessibility)*
+*Next: Phase 4 (handover to Murali) — see design.md*

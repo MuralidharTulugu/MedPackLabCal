@@ -1,9 +1,11 @@
 # MedPackLabCal — Setup & Redeployment Guide
 
 This documents everything needed to stand this app up from scratch (or redo it if the
-Cloudflare/Google config is ever lost). The app itself is a single static file,
-`index.html` — there is no server, database, or build step. All data (customers, quotes)
-lives in a Google Sheet created automatically in each signed-in user's own Google Drive.
+Cloudflare/Google config is ever lost). The app is a static site — no server, database, or
+build step. As of Phase 3 it's five files, all of which must be deployed together:
+`index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`. All data (customers,
+quotes) lives in a Google Sheet created automatically in each signed-in user's own Google
+Drive — there is no shared backend database to provision.
 
 Current live values (July 2026):
 - App URL: `https://labelcal.medpack.workers.dev`
@@ -85,12 +87,16 @@ it: **Workers & Pages → (any worker) → Settings**, or account-level Workers 
 1. Cloudflare dashboard → **Workers & Pages** → click the **labelcal** worker (or
    **Create application → Workers** if starting fresh, then name it `labelcal`).
 2. Click **New deployment** (top right of the worker's Overview tab).
-3. On the "Upload static files to update your Worker" screen, drag in (or browse to)
-   the current `index.html`.
+3. On the "Upload static files to update your Worker" screen, drag in the whole
+   `MedPackLabCal` **folder** (or select all five files at once: `index.html`,
+   `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`). Uploading only `index.html`
+   still works for code-only changes, but the PWA install prompt and offline caching need
+   the other four files present too — if they're missing the app still runs fine online,
+   it just won't be installable/offline-capable.
 4. Click **Deploy**.
 
-This uploader only accepts static assets (HTML/CSS/JS) — that's all this app needs.
-There is no separate build step; whatever `index.html` contains is exactly what goes live.
+This uploader only accepts static assets (HTML/CSS/JS/images) — that's all this app needs.
+There is no separate build step; whatever's in these files is exactly what goes live.
 
 ### 2.4 Gate it with Cloudflare Access (Zero Trust)
 Hosting alone doesn't add a login wall — anyone with the URL could open the raw page
@@ -117,14 +123,16 @@ together.
 
 ## 3. Redeploying after a code change
 
-Every time `index.html` is edited:
-1. Re-upload it via **2.3** above (Workers & Pages → labelcal → New deployment → drop the
-   file → Deploy).
+Every time `index.html` (or any of the other four files) is edited:
+1. Re-upload via **2.3** above (Workers & Pages → labelcal → New deployment → drop the
+   files → Deploy).
 2. No changes are normally needed on the Google Cloud or Access side unless the URL
    itself changed.
-3. Hard-refresh the app in the browser to pick up the new version (Cloudflare's edge
-   cache for Worker assets is normally near-instant, but a hard refresh avoids any local
-   browser cache confusion).
+3. Hard-refresh the app in the browser to pick up the new version. Since Phase 3 added a
+   service worker (`sw.js`) that caches the app shell for offline use, a normal refresh may
+   briefly show the previous cached version before the service worker fetches and caches
+   the new one in the background — a hard refresh (or closing/reopening the tab a second
+   time) guarantees you're seeing the latest deploy.
 
 ---
 
@@ -153,6 +161,9 @@ Kamalesh's in Kamalesh's, with nothing to configure for that separation.
 - **Google Cloud Console "excessive automated requests" warning / gstatic blocked** →
   happens if the Console is scripted/automated too aggressively in a short window; wait
   a few minutes and do the remaining steps manually in the Console UI.
+- **A redeploy doesn't seem to show up** → the Phase 3 service worker (`sw.js`) caches the
+  app shell for offline use. Hard-refresh (or close and reopen the tab) to force it to pick
+  up the new deploy instead of serving the cached version.
 - **Access gate protecting the old URL only** → after renaming the Worker or the account
   subdomain, remember to update both the Access application's destination (2.4) and the
   Google OAuth origin (1.4) to the new URL — they don't update themselves.
