@@ -820,7 +820,7 @@
         // ============================================================
         
         // --- Configuration ---
-        const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // REPLACE WITH YOUR CLIENT ID
+        const GOOGLE_CLIENT_ID = '1063718102279-tpibkv8nsnknluaf6p51ka2umkidtic4.apps.googleusercontent.com';
         const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
         const SPREADSHEET_NAME = 'MedPackLabCal Quotes';
         const SHEETS = {
@@ -1190,7 +1190,7 @@
             initializeDOMElements();
 
             // Initialize Google Auth (Phase 1)
-            initGoogleAuth();
+            initGIS();
 
             // Populate Cylinder Teeth dropdown
             if (DOMElements.cylinderTeethSelect) {
@@ -1234,21 +1234,11 @@
                 DOMElements.testSheetsBtn.addEventListener('click', testSheetsConnection);
             }
 
-            // Phase 1: Sign In button
-            if (DOMElements.signInBtn) {
-                DOMElements.signInBtn.addEventListener('click', () => {
-                    google.accounts.oauth2.initTokenClient({
-                        client_id: CLIENT_ID,
-                        scope: SCOPES,
-                        callback: handleTokenResponse
-                    }).requestAccessToken();
-                });
-            }
-
-            // Phase 1: Sign Out button
-            if (DOMElements.signOutBtn) {
-                DOMElements.signOutBtn.addEventListener('click', signOut);
-            }
+            // Note: Sign In / Sign Out button listeners are already attached
+            // by initGIS() above (via authElements.signInBtn/signOutBtn).
+            // A duplicate listener block referencing undefined CLIENT_ID/
+            // handleTokenResponse was removed here — it would have thrown
+            // a ReferenceError on click.
 
             // Initial calculations on page load
             updateCylinderSizes();
