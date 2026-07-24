@@ -20,99 +20,110 @@
             max-width: 960px;
         }
 
-        /* Common style for the new field wrappers (label + input/output in one box) */
+        /* Common style for the field wrappers: label stacked above the input/output.
+           Stacking (rather than label-left/value-right) reads better at every width,
+           gives numbers room to be typed left-to-right, and avoids squeeze on mobile. */
         .field-box {
-            @apply flex justify-between items-center px-4 py-3 border border-black rounded-lg shadow-md; /* Black border, padding, rounded corners, shadow */
-            min-height: 56px; /* Ensure consistent height for all boxes */
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            padding: 0.65rem 0.9rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.6rem;
+            background: #ffffff;
+            min-height: 64px;
+            justify-content: center;
         }
-        /* Specific background colors for input/output within the field-box */
+        /* Specific background/border colors for input/output within the field-box */
         .field-box.input-type {
-            background-color: #fffbeb; /* Light yellow background for input boxes */
+            background-color: #fffdf6;
+            border-color: #fde68a; /* soft amber border to signal "editable" */
         }
         .field-box.output-type {
-            background-color: #e0ffe0; /* Light green background for output boxes (emerald-50) */
+            background-color: #f2fbf5;
+            border-color: #a7e5bd; /* soft green border to signal "calculated" */
         }
 
-
-        /* Styling for Input Elements (text input, number input, select) - No direct border here, handled by .field-box */
+        /* Styling for Input Elements (text input, number input, select) */
         input[type="number"], input[type="text"], select {
-            @apply flex-grow text-right bg-transparent border-none outline-none focus:ring-0; /* Remove default input styling, focus ring handled by parent */
-            color: #333; /* Darker text for readability */
-            padding: 0; /* Remove internal padding, handled by parent .field-box */
+            @apply w-full text-left bg-transparent border-none outline-none focus:ring-0;
+            color: #1f2937;
+            font-size: 1rem;
+            padding: 0.15rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
+            border-bottom-color: #2563eb; /* clear focus feedback while filling the form */
         }
         /* Make number input spinners always visible and styled */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none; /* Remove default styling */
-            opacity: 1; /* Ensure visibility */
-            width: 1.5rem; /* Make them wider */
-            height: 100%; /* Full height */
-            margin: 0; /* Remove default margin */
-            background-color: rgba(0, 0, 0, 0.05); /* Subtle background */
-            border-left: 1px solid rgba(0, 0, 0, 0.1); /* Separator line */
+            -webkit-appearance: none;
+            opacity: 1;
+            width: 1.5rem;
+            height: 100%;
+            margin: 0;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
             cursor: pointer;
             transition: background-color 0.2s ease-in-out;
         }
         input[type="number"]::-webkit-inner-spin-button:hover,
         input[type="number"]::-webkit-outer-spin-button:hover {
-            background-color: rgba(0, 0, 0, 0.1); /* Darker on hover */
+            background-color: rgba(0, 0, 0, 0.1);
         }
         input[type="number"] {
             -moz-appearance: textfield; /* Firefox compatibility */
         }
 
-        select {
-            /* For select dropdowns, adjust padding to make space for custom arrow if needed */
-            padding-right: 20px; /* Make space for a custom arrow if desired for consistency */
-        }
-
-
         /* Styling for Labels within field boxes */
         .field-box label {
-            @apply text-base font-medium text-gray-700 mr-2 flex-shrink-0; /* Label on left, pushes value right */
-            margin-bottom: 0 !important; /* Override default label margin */
+            @apply text-xs font-semibold text-gray-500 flex-shrink-0;
+            margin-bottom: 0 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
         }
         /* Styling for Output Spans within field boxes */
         .field-box span.output-value {
-            @apply text-right font-bold text-gray-900 flex-shrink-0; /* Align right, bold */
-            color: #065f46; /* Tailwind emerald-800 for strong output text */
+            @apply text-left font-bold text-gray-900 flex-shrink-0;
+            font-size: 1.05rem;
+            color: #047857; /* Tailwind emerald-700 for strong output text */
         }
 
 
-        /* Styling for Headings and Sub-headings - Left Aligned, More Decorative */
+        /* Styling for Headings and Sub-headings - Left Aligned */
         h1 {
-            @apply text-4xl sm:text-5xl font-extrabold text-left text-blue-800 mb-12 tracking-tight; /* Larger, bolder, more spacing */
+            @apply text-2xl sm:text-4xl font-extrabold text-left text-blue-800 tracking-tight;
         }
         .section-title {
-            @apply text-2xl sm:text-3xl font-bold text-left text-gray-800 mb-8 border-b-4 border-blue-200 pb-4; /* Larger, bolder, thicker underline */
+            @apply text-xl sm:text-2xl font-bold text-left text-gray-800 mb-6 border-b-2 border-blue-200 pb-3;
         }
-        
+
         /* Specific styling for final output values */
         #totalOverallCost .output-value {
             @apply text-xl font-bold text-blue-800; /* Darker blue */
         }
         #basicCostPerLabel .output-value, #sellingPricePerLabel .output-value, #totalSellingValue .output-value {
-             @apply text-xl font-bold; 
+             @apply text-xl font-bold;
         }
 
         .highlight-yellow {
-            background-color: #fef08a; /* Tailwind yellow-200 */
+            background-color: #fef9e7;
         }
         .highlight-green {
-            background-color: #dcfce7; /* Tailwind green-100 */
+            background-color: #ecfdf3;
         }
         .suitable-row {
-            background-color: #dcfce7; /* Light green for suitable rows in table */
+            background-color: #ecfdf3;
         }
         table {
             @apply w-full border-collapse;
         }
-        /* Added border-black to all table cells */
         th, td {
-            @apply px-4 py-3 border border-black; /* Black border for all table cells */
+            @apply px-3 py-2 border border-gray-200;
         }
         th {
-            @apply bg-gray-200 font-semibold text-gray-700;
+            @apply bg-gray-100 font-semibold text-gray-700;
         }
         /* Align specific table columns to right */
         #detailedCalculationTable th:nth-child(1),
@@ -142,14 +153,22 @@
         .grid {
             gap: 1.5rem; /* Default Tailwind gap-6 */
         }
-        
+        @media (max-width: 640px) {
+            .grid {
+                gap: 1rem;
+            }
+            .field-box {
+                min-height: 56px;
+            }
+        }
+
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
     <!-- This is the main container that will be captured as an image -->
-    <div id="capture" class="container mx-auto bg-white shadow-lg rounded-lg p-6">
+    <div id="capture" class="container mx-auto bg-white shadow-lg rounded-lg p-4 sm:p-6">
         <!-- Auth Header -->
-        <div id="authHeader" class="flex justify-between items-center mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div id="authHeader" class="flex flex-wrap justify-between items-center gap-3 mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div>
                 <h1 class="text-3xl font-bold text-left text-blue-800 tracking-tight">Label Costing Calculator</h1>
                 <p id="userInfo" class="text-sm text-gray-600 mt-1 hidden">Signed in as <span id="userEmail"></span></p>
@@ -164,6 +183,18 @@
                 </button>
             </div>
         </div>
+
+        <!-- Sign-in Gate: shown until the user signs in, hides the rest of the app -->
+        <div id="signInGate" class="text-center py-16 px-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 mb-8">
+            <p class="text-lg font-medium text-gray-700 mb-2">Sign in to use the calculator</p>
+            <p class="text-sm text-gray-500 mb-5">Your quotes and customers are saved to your own Google Sheet, so signing in is required before anything else is available.</p>
+            <button id="signInGateBtn" class="bg-blue-600 text-white font-medium py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors">
+                Sign in with Google
+            </button>
+        </div>
+
+        <!-- Gated content: hidden until sign-in succeeds -->
+        <div id="appContent" class="gated-content hidden">
 
         <!-- Quote Management Bar (Phase 2) -->
         <div id="quoteBar" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -551,10 +582,12 @@
 
             </div>
         </section>
+        </div>
+        <!-- /Gated content -->
     </div>
 
     <!-- Save Quote (Phase 2) -->
-    <div class="container mx-auto mt-8 mb-4 flex flex-wrap items-end justify-center gap-3">
+    <div class="gated-content hidden container mx-auto mt-8 mb-4 flex flex-wrap items-end justify-center gap-3">
         <div class="flex-1 min-w-[220px] max-w-xs">
             <label class="block text-sm font-medium text-gray-700 mb-1" for="quoteNameInput">Quote Name</label>
             <input type="text" id="quoteNameInput" placeholder="e.g. Batch of 50,000 - July"
@@ -935,6 +968,12 @@
                     gisTokenClient.requestAccessToken({ prompt: 'consent' });
                 });
             }
+            const signInGateBtn = document.getElementById('signInGateBtn');
+            if (signInGateBtn) {
+                signInGateBtn.addEventListener('click', () => {
+                    gisTokenClient.requestAccessToken({ prompt: 'consent' });
+                });
+            }
             if (authElements.signOutBtn) {
                 authElements.signOutBtn.addEventListener('click', signOut);
             }
@@ -1203,6 +1242,13 @@
                 authElements.userInfo?.classList.add('hidden');
                 authElements.syncStatus?.classList.add('hidden');
             }
+
+            // Phase 2: gate the whole calculator behind a successful sign-in
+            const isSignedIn = !!(signedIn && currentUser);
+            document.getElementById('signInGate')?.classList.toggle('hidden', isSignedIn);
+            document.querySelectorAll('.gated-content').forEach(el => {
+                el.classList.toggle('hidden', !isSignedIn);
+            });
         }
 
         function updateSyncStatus(text, classes) {
