@@ -1117,8 +1117,8 @@
 
         async function ensureSheets() {
             const sheetConfigs = [
-                { name: SHEETS.CUSTOMERS, headers: ['CustomerID', 'Name', 'Phone', 'Email', 'CreatedAt', 'UpdatedAt'] },
-                { name: SHEETS.QUOTES, headers: ['QuoteID', 'CustomerID', 'QuoteName', 'Status', 'Version', 'CreatedAt', 'UpdatedAt', 'InputsJSON', 'OutputsJSON', 'Notes'] },
+                { name: SHEETS.CUSTOMERS, headers: CUSTOMERS_HEADERS },
+                { name: SHEETS.QUOTES, headers: QUOTES_HEADERS },
                 { name: SHEETS.TEMPLATES, headers: ['TemplateID', 'Name', 'Category', 'InputsJSON'] }
             ];
 
@@ -1151,11 +1151,25 @@
             }
         }
 
+        // Converts a 1-indexed column number to its spreadsheet letter(s): 1 -> A, 26 -> Z,
+        // 27 -> AA, etc. The Quotes sheet now has 60+ columns, well past the 26-column limit
+        // of a single letter, so this replaces the old String.fromCharCode(65 + n) shortcut
+        // (which silently produced garbage past column Z).
+        function columnLetter(n) {
+            let result = '';
+            while (n > 0) {
+                const remainder = (n - 1) % 26;
+                result = String.fromCharCode(65 + remainder) + result;
+                n = Math.floor((n - 1) / 26);
+            }
+            return result;
+        }
+
         async function ensureHeaders(sheetName, headers) {
             try {
                 const response = await gapiClient.sheets.spreadsheets.values.get({
                     spreadsheetId,
-                    range: `${sheetName}!A1:${String.fromCharCode(65 + headers.length - 1)}1`
+                    range: `${sheetName}!A1:${columnLetter(headers.length)}1`
                 });
                 
                 const existingHeaders = response.result.values?.[0] || [];
@@ -1206,6 +1220,29 @@
             }
         }
 
+        // Turns a raw values grid (row 0 = headers, rest = data) into plain objects keyed by
+        // the ACTUAL header text found in row 1 of the sheet — not by column position and not
+        // by the app's own QUOTES_HEADERS/CUSTOMERS_HEADERS constants. This is what makes
+        // reading "named": if a column ever legitimately moves, the header row moves with it,
+        // and this still maps values to the right field. (It does still assume the header
+        // text itself isn't hand-edited to something the app doesn't recognize.)
+        function rowsToObjects(rows) {
+            if (!rows || rows.length === 0) return [];
+            const headers = rows[0];
+            return rows.slice(1)
+                .filter((row) => row.some((cell) => cell !== undefined && cell !== ''))
+                .map((row) => {
+                    const record = {};
+                    headers.forEach((header, i) => { record[header] = row[i] ?? ''; });
+                    return record;
+                });
+        }
+
+        async function readSheetAsObjects(sheetName) {
+            const rows = await readSheet(sheetName);
+            return rowsToObjects(rows);
+        }
+
         async function appendRow(sheetName, values) {
             try {
                 const response = await withRetry(() => gapiClient.sheets.spreadsheets.values.append({
@@ -1224,7 +1261,7 @@
 
         async function updateRow(sheetName, rowIndex, values) {
             try {
-                const colLetter = String.fromCharCode(65 + values.length - 1);
+                const colLetter = columnLetter(values.length);
                 const response = await withRetry(() => gapiClient.sheets.spreadsheets.values.update({
                     spreadsheetId,
                     range: `${sheetName}!A${rowIndex}:${colLetter}${rowIndex}`,
@@ -1364,6 +1401,15 @@
             'sellingPricePerLabel', 'totalSellingValue'
         ];
 
+        // Quotes sheet column layout: identity/summary columns first (with the final quote
+        // value right next to the name so it's visible at a glance), then every input field,
+        // then every calculated/intermediate field — one value per column, no JSON blobs.
+        // Reading and writing both go through these header names (see rowsToObjects() /
+        // readSheetAsObjects() below) rather than raw numeric column positions.
+        const QUOTES_META_HEADERS = ['QuoteID', 'CustomerID', 'QuoteName', 'FinalQuoteValue', 'Status', 'Version', 'CreatedAt', 'UpdatedAt'];
+        const QUOTES_HEADERS = [...QUOTES_META_HEADERS, ...INPUT_FIELD_IDS, ...OUTPUT_FIELD_IDS, 'Notes'];
+        const CUSTOMERS_HEADERS = ['CustomerID', 'Name', 'Phone', 'Email', 'CreatedAt', 'UpdatedAt'];
+
         // --- Quote/Customer State ---
         let customersCache = [];
         let currentCustomerId = null;
@@ -1471,12 +1517,12 @@
 
         // --- Customer Management ---
         async function loadCustomers() {
-            const rows = await readSheet(SHEETS.CUSTOMERS);
-            customersCache = rows.slice(1)
-                .filter(r => r[0])
-                .map(r => ({
-                    CustomerID: r[0], Name: r[1] || '', Phone: r[2] || '',
-                    Email: r[3] || '', CreatedAt: r[4] || '', UpdatedAt: r[5] || ''
+            const records = await readSheetAsObjects(SHEETS.CUSTOMERS);
+            customersCache = records
+                .filter((rec) => rec.CustomerID)
+                .map((rec) => ({
+                    CustomerID: rec.CustomerID, Name: rec.Name || '', Phone: rec.Phone || '',
+                    Email: rec.Email || '', CreatedAt: rec.CreatedAt || '', UpdatedAt: rec.UpdatedAt || ''
                 }));
             return customersCache;
         }
@@ -1497,8 +1543,14 @@
         async function createCustomer(name, phone, email) {
             const customerId = crypto.randomUUID();
             const now = new Date().toISOString();
-            await appendRow(SHEETS.CUSTOMERS, [customerId, name, phone || '', email || '', now, now]);
-            customersCache.push({ CustomerID: customerId, Name: name, Phone: phone || '', Email: email || '', CreatedAt: now, UpdatedAt: now });
+            const record = {
+                CustomerID: customerId, Name: name, Phone: phone || '',
+                Email: email || '', CreatedAt: now, UpdatedAt: now
+            };
+            // Named object built above; converted to a positional array only at the very last
+            // step, since that's the one place the Sheets API actually requires it.
+            await appendRow(SHEETS.CUSTOMERS, CUSTOMERS_HEADERS.map((header) => record[header] ?? ''));
+            customersCache.push(record);
             populateCustomerDatalist();
             return customerId;
         }
@@ -1538,11 +1590,20 @@
             const isNewQuote = !currentQuoteId;
             const quoteId = isNewQuote ? crypto.randomUUID() : currentQuoteId;
             const version = isNewQuote ? 1 : currentQuoteVersion + 1;
+            const finalQuoteValue = outputs.totalSellingValue ?? '';
 
-            const row = [
-                quoteId, currentCustomerId, quoteName, 'Draft', version,
-                now, now, JSON.stringify(inputs), JSON.stringify(outputs), ''
-            ];
+            // Named object, keyed the same way everywhere else in the app (inputs/outputs are
+            // already keyed by field id). Converted to a positional array only right at the
+            // end, since that's the one place the Sheets API actually requires one — the order
+            // comes from QUOTES_HEADERS so it's always in sync with the header row.
+            const record = {
+                QuoteID: quoteId, CustomerID: currentCustomerId, QuoteName: quoteName,
+                FinalQuoteValue: finalQuoteValue, Status: 'Draft', Version: version,
+                CreatedAt: now, UpdatedAt: now,
+                ...inputs, ...outputs,
+                Notes: ''
+            };
+            const row = QUOTES_HEADERS.map((header) => record[header] ?? '');
 
             const btn = quoteElements.saveQuoteBtn;
             const originalLabel = btn ? btn.textContent : '';
@@ -1573,16 +1634,24 @@
         }
 
         async function loadAllQuotes() {
-            const rows = await readSheet(SHEETS.QUOTES);
-            return rows.slice(1)
-                .filter(r => r[0])
-                .map(r => ({
-                    QuoteID: r[0], CustomerID: r[1], QuoteName: r[2] || '',
-                    Status: r[3] || 'Draft', Version: parseInt(r[4], 10) || 1,
-                    CreatedAt: r[5] || '', UpdatedAt: r[6] || '',
-                    InputsJSON: safeParseJSON(r[7]), OutputsJSON: safeParseJSON(r[8]),
-                    Notes: r[9] || ''
-                }))
+            const records = await readSheetAsObjects(SHEETS.QUOTES);
+            return records
+                .filter((rec) => rec.QuoteID)
+                .map((rec) => {
+                    const inputs = {};
+                    INPUT_FIELD_IDS.forEach((id) => { inputs[id] = rec[id] ?? ''; });
+                    const outputs = {};
+                    OUTPUT_FIELD_IDS.forEach((id) => { outputs[id] = rec[id] ?? ''; });
+
+                    return {
+                        QuoteID: rec.QuoteID, CustomerID: rec.CustomerID, QuoteName: rec.QuoteName || '',
+                        FinalQuoteValue: rec.FinalQuoteValue || '',
+                        Status: rec.Status || 'Draft', Version: parseInt(rec.Version, 10) || 1,
+                        CreatedAt: rec.CreatedAt || '', UpdatedAt: rec.UpdatedAt || '',
+                        InputsJSON: inputs, OutputsJSON: outputs,
+                        Notes: rec.Notes || ''
+                    };
+                })
                 .sort((a, b) => new Date(b.UpdatedAt) - new Date(a.UpdatedAt));
         }
 
@@ -1645,7 +1714,11 @@
             quoteElements.myQuotesList.innerHTML = Array.from(latestByQuoteId.values()).map(q => `
                 <div class="flex justify-between items-center border border-gray-200 rounded-lg px-3 py-2">
                     <div>
-                        <div class="font-medium">${escapeHtml(q.QuoteName)} <span class="text-xs text-gray-500">v${q.Version} · ${escapeHtml(q.Status)}</span></div>
+                        <div class="font-medium">
+                            ${escapeHtml(q.QuoteName)}
+                            <span class="text-green-700 font-semibold">${escapeHtml(q.FinalQuoteValue)}</span>
+                            <span class="text-xs text-gray-500">v${q.Version} · ${escapeHtml(q.Status)}</span>
+                        </div>
                         <div class="text-xs text-gray-500">${escapeHtml(customerNameById(q.CustomerID))} · ${q.UpdatedAt ? new Date(q.UpdatedAt).toLocaleString() : ''}</div>
                     </div>
                     <button data-quote-id="${q.QuoteID}" class="load-quote-btn bg-blue-600 text-white text-xs font-medium py-1.5 px-3 rounded-lg hover:bg-blue-700">Load</button>

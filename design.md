@@ -389,6 +389,10 @@ async function flushQueue() {
 
 **Phase 3 status: COMPLETE** (descoped items excluded).
 
+**Quotes sheet schema update (2026-07-24):** the `Quotes` tab no longer stores `InputsJSON`/`OutputsJSON` blobs. Every input and calculated field now gets its own column — order is: `QuoteID, CustomerID, QuoteName, FinalQuoteValue, Status, Version, CreatedAt, UpdatedAt`, then all 31 input fields, then all 23 calculated fields, then `Notes` (63 columns total). `FinalQuoteValue` (= Total Selling Value) sits right next to `QuoteName` so the headline number is visible without scrolling. This also fixed a latent bug where the column-letter math (`String.fromCharCode`) only worked up to column Z — replaced with a proper `columnLetter()` helper that handles AA, AB, etc.
+
+**Named row access (2026-07-24):** reading/writing Customers and Quotes no longer indexes rows by number (`r[0]`, `r[3]`, ...). `rowsToObjects()`/`readSheetAsObjects()` turn a sheet's raw grid into plain objects keyed by whatever text is actually in its header row, and every read (`loadCustomers`, `loadAllQuotes`) consumes those by field name. Writes (`createCustomer`, `saveQuote`) build a named object first and convert to the array Sheets' API requires only at the very last step, via `CUSTOMERS_HEADERS.map(...)` / `QUOTES_HEADERS.map(...)`.
+
 ---
 
 ### Phase 4: Handover to Murali (Week 2-3)
